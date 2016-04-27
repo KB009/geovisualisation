@@ -10,7 +10,7 @@ $(document).ready(function() {
   })
 
 
-$('#menu').on('menuUpdate', function(e) {
+$('#geo-menu').on('menuUpdate', function(e) {
   // console.log("Jsem v menuUpdate event", e.detail);
 
   switch(e.detail) {
