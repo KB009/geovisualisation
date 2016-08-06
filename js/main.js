@@ -12,9 +12,13 @@ $(window).load(function () {
         height = $(window).height(),
         rotate = [0,0],
         active = d3.select(null);
+        // active_d = d3.select(null);
+        menu_height = 185;
+        transform = "";
+        
 
     var projection = d3.geo.mercator()
-                            .scale(250)
+                            .scale(width/7)
                             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path().projection(projection);
@@ -30,15 +34,27 @@ $(window).load(function () {
                                 d3.selectAll("path").attr("d", path);
 
                             });  
-    
+
+    var zoom = d3.behavior.zoom()
+                            .scaleExtent([0.5, 10])
+                            .on("zoom", zoomed);
+
     var svg = d3.select("body").append("svg")
-                            .attr("width", width)
-                            .attr("height", height)
+                            // .attr("width", width)
+                            // .attr("height", height)
+                            // .attr("preserveAspectRatio", "xMinYMin meet")
+                            .attr("viewBox", "0 0 " + width + " " + height)
+                            // .classed("svg-content-responsive", true)
                             //.on("click", reset)
-                            .call(drag);
+                            .call(drag)
+                            .call(zoom);
     
+    
+
     var g = svg.append("g")
+                            .attr("id", "map_wrap")
                             .style("stroke-width", "1px");
+
     
     events = d3.json("data/Events-few.txt", function(error, events) {
         console.log(events);
@@ -49,7 +65,6 @@ $(window).load(function () {
         if (error) return console.error(error);
 
         g.selectAll("path")
-                        // .data(topojson.feature(uk, uk.objects.unit).features)
                         .data(topojson.feature(uk, uk.objects.countries).features)
                         .enter()
                         .append("path")
@@ -59,17 +74,13 @@ $(window).load(function () {
                         })
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
-        
-        /*g.append("path")
-            .datum(topojson.mesh(uk, uk.objects.unit, function(a, b) { return a !== b; }))
-            .attr("class", "mesh")
-            .attr("d", path);*/
     });
-    
+
     function clicked(d) {
         if (active.node() === this) return reset();
         active.classed("active", false);
         active = d3.select(this).classed("active", true);
+        // active_d = d;
 
         // Zoom on a clicked country
         var bounds = path.bounds(d),                // [[left, top], [right, bottom]]
@@ -77,36 +88,42 @@ $(window).load(function () {
             dy = bounds[1][1] - bounds[0][1],       // bottom - top
             x = (bounds[0][0] + bounds[1][0]) / 2,  // (left - rigth) / 2
             y = (bounds[0][1] + bounds[1][1]) / 2,  // (top - bottom) / 2
-            scale = .9 / Math.max(dx / width, dy / height),
-            translate = [width / 2 - scale * x, height / 2 - scale * y];
+            scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
+            translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
+            
+        var g_width = document.getElementById("map_wrap").getBBox().width;
+        // console.log("Country bb: " + dx + " map_wrap bb: " + 0.9 * g_width);
+        // console.log("Bound box: " + dx + " right: " + bounds[1][0] + " left: " + bounds[0][0]);
+          // console.log("right " + bounds[1][0] + " inverted: " + projection.invert([bounds[1][0], bounds[0][1]]));
+          // console.log("left " + bounds[0][0] + " inverted: " + projection.invert([bounds[0][0], bounds[0][1]] ));
 
         g.transition()
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-        }
-
-        function reset() {
-            active.classed("active", false);
-            active = d3.select(null);
-
-        g.transition()
-            .duration(750)
-            .style("stroke-width", "1.5px")
-            .attr("transform", "");
     }
     
+    d3.select(window).on('resize', function() {
+        width = $(window).width();
+        height = $(window).height();
+    });
+
     // Go to default display / the whole world
     function reset() {
         active.classed("active", false);
         active = d3.select(null);
+        active_d = d3.select(null);
 
         g.transition()
             .duration(750)
             .style("stroke-width", "1.5px")
-            .attr("transform", "");
-}
-    
+            .attr("transform", transform);
+    };
+
+    function zoomed() {
+        transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+        g.attr("transform", transform);
+    };
     
 /*
 // canvas resolution

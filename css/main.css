@@ -32,3 +32,25 @@ path:hover {
 path.active {
   fill: gray;
 }
+
+/* responsive */
+.svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    /*height: ;*/
+    /*padding-top: 185px;*/
+    padding-bottom: 100%;  /*aspect ratio*/ 
+    vertical-align: top;
+    overflow: hidden;
+}
+.svg-content-responsive {
+    display: inline-block;
+    /*position: absolute;*/
+    top: 10px;
+    left: 0;
+}
+
+#svg-container {
+  /*flex: 1 1 auto;*/
+}
