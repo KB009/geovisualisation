@@ -22,6 +22,11 @@ $(window).load(function () {
                             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path().projection(projection);
+
+    // color scheme for source ip's choroplet
+    var choropleth_source = d3.scale.quantize()
+                                .range(["rgb(186,228,179)", //"rgb(237,248,233)", 
+                                "rgb(116,196,118)", "rgb(49,163,84)","rgb(0,109,44)"]);
     
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
@@ -48,29 +53,40 @@ $(window).load(function () {
                             //.on("click", reset)
                             .call(drag)
                             .call(zoom);
-    
-    
 
     var g = svg.append("g")
                             .attr("id", "map_wrap")
                             .style("stroke-width", "1px");
 
+    // Zdrojove IP adresy / utocnici
+    var source = [];
+    // Cilove IP adresy / obeti
+    var target = {};
+    // Vsechny udalosti
     
     events = d3.json("data/Events-few.txt", function(error, events) {
         console.log(events);
         return events;
     });
 
-    d3.json("data/world-50m-id.json", function(error, uk) {
+    d3.json("data/world-50m-id.json", function(error, json) {
         if (error) return console.error(error);
 
         g.selectAll("path")
-                        .data(topojson.feature(uk, uk.objects.countries).features)
+                        .data(topojson.feature(json, json.objects.countries).features)
                         .enter()
                         .append("path")
                         .attr("d", path)
                         .attr("id", function(d) {
                             return d.id;
+                        })
+                        .style("fill", function(d) {
+                            var result = $.grep(source, function(e){ return e.country == d.id; });
+                            if (result.length > 0) {
+                                console.log(result[0].count);
+                                return choropleth_source(result[0].count);
+                            }
+                            return "#ccc";
                         })
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
