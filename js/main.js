@@ -69,8 +69,49 @@ $(window).load(function () {
     var target = {};
     // Vsechny udalosti
     
-    events = d3.json("data/Events-few.txt", function(error, events) {
-        console.log(events);
+
+    var events = d3.json("data/Events500.txt", function(error, events) {
+        // console.log(events);
+
+        // ----------- sources --------------------------------------
+        for (var i = 0; i < events.length; i++) {
+            source_country = events[i].source.country;
+
+            // to improve
+            var included = false;
+            for (var j = 0; j < source.length; j++) {
+                if (source[j].country == source_country) {
+                    included = true;
+                    break;
+                }
+            }
+
+            if (!included) {
+                var new_entry = {};
+                new_entry.country = source_country;
+                new_entry.count = 1;
+                source.push(new_entry);
+
+            } else {
+                // jQuery fnc
+                var res = $.grep(source, function(e) { return e.country == source_country; });
+                res[0].count++;
+            }
+
+        }
+
+        choropleth_source.domain([
+                            d3.min(source, function(d) { return d.count; }),
+                            d3.max(source, function(d) { return d.count; })
+            ]);
+
+        // ---------- targets ----------------------------------------
+        for (var i = 0; i < events.length; i++) {
+            
+        }
+
+
+
         return events;
     });
 
