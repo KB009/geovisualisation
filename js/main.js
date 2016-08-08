@@ -25,7 +25,6 @@ $(window).load(function () {
 
     // color scheme for source ip's choroplet
     var choropleth_source = d3.scale.quantize()
-                                .range(["rgb(186,228,179)", //"rgb(237,248,233)", 
                                 .range(["rgb(199,233,192)", "rgb(161,217,155)",
                                 "rgb(116,196,118)", "rgb(49,163,84)","rgb(0,109,44)"]);
 
