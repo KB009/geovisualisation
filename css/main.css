@@ -26,7 +26,10 @@ path {
 }
 
 path:hover {
-  fill: #E9CB60;
+  /*fill: #E9CB60;*/
+  fill: gray;
+  /*stroke: black;
+  stroke-width: 2px;*/
 }
 
 path.active {

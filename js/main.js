@@ -26,7 +26,13 @@ $(window).load(function () {
     // color scheme for source ip's choroplet
     var choropleth_source = d3.scale.quantize()
                                 .range(["rgb(186,228,179)", //"rgb(237,248,233)", 
+                                .range(["rgb(199,233,192)", "rgb(161,217,155)",
                                 "rgb(116,196,118)", "rgb(49,163,84)","rgb(0,109,44)"]);
+
+    // color scheme for target ip's choroplet
+    var choropleth_target = d3.scale.quantize()
+                                .range(["rgb(252,187,161)", "rgb(252,146,114)", 
+                                    "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
     
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
