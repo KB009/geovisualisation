@@ -66,27 +66,27 @@ $(window).load(function () {
     // Zdrojove IP adresy / utocnici
     var source = [];
     // Cilove IP adresy / obeti
-    var target = {};
+    var target = [];
     // Vsechny udalosti
     
 
     var events = d3.json("data/Events500.txt", function(error, events) {
         // console.log(events);
 
-        // ----------- sources --------------------------------------
         for (var i = 0; i < events.length; i++) {
             source_country = events[i].source.country;
 
-            // to improve
-            var included = false;
+            // to improve 
+            // ----------- sources --------------------------------------
+            var s_country_included = false;
             for (var j = 0; j < source.length; j++) {
                 if (source[j].country == source_country) {
-                    included = true;
+                    s_country_included = true;
                     break;
                 }
             }
 
-            if (!included) {
+            if (!s_country_included) {
                 var new_entry = {};
                 new_entry.country = source_country;
                 new_entry.count = 1;
@@ -98,6 +98,34 @@ $(window).load(function () {
                 res[0].count++;
             }
 
+
+            // ---------- targets ----------------------------------------
+
+            for (var t = 0; t < events[i].targets.length; t++) {
+                var target_country = events[i].targets[t].country;
+
+                var t_country_included = false;
+
+                for (var j = 0; j < target.length; j++) {
+                    if (target[j].country == target_country) {
+                        t_country_included = true;
+                        break;
+                    }
+                }
+
+                if ( !t_country_included) {
+                    var new_entry = {};
+                    new_entry.country = target_country;
+                    new_entry.count = 1;
+                    target.push(new_entry);
+
+                } else {
+                    // jQuery fnc
+                    var res = $.grep(target, function(e) { return e.country == target_country; });
+                    res[0].count++;
+                }
+            }
+
         }
 
         choropleth_source.domain([
@@ -105,10 +133,14 @@ $(window).load(function () {
                             d3.max(source, function(d) { return d.count; })
             ]);
 
-        // ---------- targets ----------------------------------------
-        for (var i = 0; i < events.length; i++) {
-            
-        }
+        choropleth_target.domain([
+                            d3.min(target, function(d) { return d.count; }),
+                            d3.max(target, function(d) { return d.count; })
+            ]);
+
+        console.log(choropleth_target.domain());
+
+
 
 
 
@@ -129,9 +161,17 @@ $(window).load(function () {
                         .style("fill", function(d) {
                             var result = $.grep(source, function(e){ return e.country == d.id; });
                             if (result.length > 0) {
-                                console.log(result[0].count);
+                                // console.log(d.id, result[0].count);
                                 return choropleth_source(result[0].count);
                             }
+
+                            // var result = $.grep(target, function(e){ return e.country == d.id; });
+                            // if (result.length > 0) {
+                            //     console.log(d.id, result[0].count);
+                            //     return choropleth_target(result[0].count);
+                            // }
+
+
                             return "#ccc";
                         })
                         .attr("class", "coutry-boundary")
