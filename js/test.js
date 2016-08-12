@@ -8,14 +8,14 @@ $(document).ready(function() {
     GeoMenu.setShowAttacks(["type2", "type4"]);
   })
 
-  $('#defaultDisplay').click(function() {
-    $('#test-btn-defaultDisplay').html('BUM Puc!');
-    // =console.log("puc");
+  // $('#defaultDisplay').on("click", function() {
+  //   $('#test-btn-defaultDisplay').html('BUM Puc!');
+  //   // =console.log("puc");
     
-    GeoMenu.setDisplayIP("target");
-    GeoMenu.setDisplayCountryNames(false);
-    GeoMenu.setShowAttacks(["type1"]);
-  })
+  //   GeoMenu.setDisplayIP("target");
+  //   GeoMenu.setDisplayCountryNames(false);
+  //   GeoMenu.setShowAttacks(["type1"]);
+  // })
 
   $('#geo-menu').on('geomenuUpdate', function(e) {
     // console.log("on geomenuUpdate");
