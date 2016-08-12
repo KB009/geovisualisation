@@ -175,6 +175,28 @@ $(window).load(function () {
                         })
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
+
+        g.selectAll("text")
+                        .data(topojson.feature(json, json.objects.countries).features)
+                        .enter()
+                        .append("text")
+                        .text(function(d) {
+                            // result = $.grep(countryNames, function(e){ return e.name == d.id; });
+                            // if (result.length > 0) {
+                            //     // return result[0].name;
+                            // }
+                            return "Me!";
+                        })
+                        .attr("x", function(d) {
+                            return path.centroid(d)[0];
+                        })
+                        .attr("y", function(d) {
+                            return path.centroid(d)[1];
+                        })
+                        .attr("text-anchor", "middle")
+                        .attr("font-size", "6pt")
+                        .attr("font-family", "sans-serif")
+                        .attr("visibility", "hidden");
     });
 
     function clicked(d) {
@@ -255,6 +277,16 @@ $(window).load(function () {
                 break;
             case 'showNames':
 
+                console.log("Show names: ");
+                g.selectAll("text")
+                    .attr("visibility", function(d) {
+                        if (GeoMenu.getDisplayCountryNames()) {
+                            return "visible";
+                        } else {
+                            return "hidden";
+                        }
+                    })
+
                 break;
             case 'showAttacks':
 
@@ -271,7 +303,7 @@ $(window).load(function () {
         reset();
     });
 
-    
+
 /*
 // canvas resolution
   var width = $(window).width() - 20,
