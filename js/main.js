@@ -69,7 +69,6 @@ $(window).load(function () {
     var target = [];
     // Vsechny udalosti
     
-
     var events = d3.json("data/Events500.txt", function(error, events) {
         // console.log(events);
 
@@ -172,7 +171,7 @@ $(window).load(function () {
                             // }
 
 
-                            return "#ccc";
+                            // return "#ccc";
                         })
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
@@ -226,7 +225,33 @@ $(window).load(function () {
         transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
         g.attr("transform", transform);
     };
-    
+
+
+    ////////////////////////////////////////////////////////
+    // --------------- Event listeners ------------------ //
+    ////////////////////////////////////////////////////////
+    $("#geo-menu").on('geomenuUpdate', function(e) {
+        switch(e.detail) {
+            case 'displayIP':
+
+                break;
+            case 'showNames':
+
+                break;
+            case 'showAttacks':
+
+                break;
+        }
+    });
+
+    $('#assignUnknown').click(function() {
+
+    });
+
+    $('#defaultDisplay').click(function() {
+        transform = "";
+        reset();
+    })
 /*
 // canvas resolution
   var width = $(window).width() - 20,
