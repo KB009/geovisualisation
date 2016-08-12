@@ -227,12 +227,30 @@ $(window).load(function () {
     };
 
 
-    ////////////////////////////////////////////////////////
-    // --------------- Event listeners ------------------ //
-    ////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
+    // --------- Event listeners + button functionality --------- // //
+    ///////////////////////////////////////////////////////////////////
+
     $("#geo-menu").on('geomenuUpdate', function(e) {
         switch(e.detail) {
             case 'displayIP':
+
+                g.selectAll("path")
+                        .style("fill", function(d) {
+                            var result;
+
+                            if (GeoMenu.getDisplayIP() == "source") {
+                                result = $.grep(source, function(e){ return e.country == d.id; });
+                                if (result.length > 0) {
+                                    return choropleth_source(result[0].count);
+                                }
+                            } else {
+                                result = $.grep(target, function(e){ return e.country == d.id; });
+                                if (result.length > 0) {
+                                    return choropleth_target(result[0].count);
+                                }
+                            }
+                        })
 
                 break;
             case 'showNames':
@@ -251,7 +269,9 @@ $(window).load(function () {
     $('#defaultDisplay').click(function() {
         transform = "";
         reset();
-    })
+    });
+
+    
 /*
 // canvas resolution
   var width = $(window).width() - 20,
