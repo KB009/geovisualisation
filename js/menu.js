@@ -16,7 +16,7 @@ var GeoMenu = {
   //div-radio-display -- display IP addresses
   setDisplayIP: function(newValue) {
     displayIP = newValue; // is it ok? Do I have to use object namespace?
-    console.log("setDisplayIP");
+    // console.log("setDisplayIP");
 
     if (newValue == "source") {
       document.getElementById("radio-display-source").checked = true;
@@ -34,7 +34,7 @@ var GeoMenu = {
 
   setDisplayCountryNames: function(newValue) {
     displayCountryNames = newValue;
-    console.log("setDisplayCountryNames");
+    // console.log("setDisplayCountryNames");
 
     document.getElementById('check-show-label').checked = newValue;
 
@@ -49,7 +49,7 @@ var GeoMenu = {
 
   setShowAttacks: function(newValue) {
     showAttacks = newValue;
-    console.log("setShowAttacks");
+    // console.log("setShowAttacks");
 
     // TO FINISH
      
@@ -175,7 +175,7 @@ $(document).ready(function() {
 
   // ********* R A D I O / Display IP adresses of **********
   var rad = document.getElementsByName('radio-display');
-  console.log(rad);
+  // console.log(rad);
 
   for (var i = 0; i < rad.length; i++) {
     rad[i].onclick = function() {
@@ -192,14 +192,14 @@ $(document).ready(function() {
   // ********* C H E C K / Display Country names **********
   var showNames = document.getElementById("check-show-label");
   showNames.onclick = function() {
-    console.log(showNames.checked);
+    // console.log(showNames.checked);
     GeoMenu.setDisplayCountryNames(showNames.checked);
     
   }
 
   // ********* C H E C K / Attack types **********
   var checkAttacks = document.getElementsByName("check-attacks");
-  console.log(checkAttacks);
+  // console.log(checkAttacks);
 
   for (var i = 0; i < checkAttacks.length; i++) {
     checkAttacks[i].onclick = function() {
