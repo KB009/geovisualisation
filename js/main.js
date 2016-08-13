@@ -63,12 +63,12 @@ $(window).load(function () {
                             .attr("id", "map_wrap")
                             .style("stroke-width", "1px");
 
+    var countryNames;
     // Zdrojove IP adresy / utocnici
     var source = [];
     // Cilove IP adresy / obeti
     var target = [];
     // Vsechny udalosti
-    
     var events = d3.json("data/Events500.txt", function(error, events) {
         // console.log(events);
 
@@ -146,10 +146,39 @@ $(window).load(function () {
         return events;
     });
 
+    function getCountryNames(callback) {
+        countryNames = d3.json("data/countries.json", function(error, json) {
+            if (error) return console.error(error);
+            console.log("INSIDE");
+            console.log(json["A1"]);
+
+            callback(json);
+
+        // ``  console.log("H " +  json['A1']);
+            return json;
+
+        });
+    }
+
     d3.json("data/world-50m-id.json", function(error, json) {
         if (error) return console.error(error);
 
-        g.selectAll("path")
+        // countryNames = d3.json("data/countries.json", function(error, json) {
+        //     if (error) return console.error(error);
+        //     console.log("INSIDE");
+        //     console.log(json);
+
+        // // ``  console.log("H " +  json['A1']);
+        //     return json;
+
+        // });
+
+        // console.log("OUTSIDE");
+        // console.log(countryNames);
+
+        getCountryNames(function(names) {
+
+            g.selectAll("path")
                         .data(topojson.feature(json, json.objects.countries).features)
                         .enter()
                         .append("path")
@@ -176,16 +205,22 @@ $(window).load(function () {
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
 
+
         g.selectAll("text")
                         .data(topojson.feature(json, json.objects.countries).features)
                         .enter()
                         .append("text")
                         .text(function(d) {
+                            // var c = String(d.id);
+                            var t = names[String(d.id)];
+                            // if (t) return 
+                            // console.log(countryNames[c]);
+                            // console.log(countryNames[String(d.id)]);
                             // result = $.grep(countryNames, function(e){ return e.name == d.id; });
                             // if (result.length > 0) {
                             //     // return result[0].name;
                             // }
-                            return "Me!";
+                            return t;
                         })
                         .attr("x", function(d) {
                             return path.centroid(d)[0];
@@ -197,7 +232,13 @@ $(window).load(function () {
                         .attr("font-size", "6pt")
                         .attr("font-family", "sans-serif")
                         .attr("visibility", "hidden");
+        })
+
+        
     });
+
+    
+
 
     function clicked(d) {
         if (active.node() === this) return reset();
