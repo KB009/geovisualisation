@@ -4,6 +4,9 @@
  * and open the template in the editor.
  */
 
+// Zkontroluj jestli neprepisuji event_id
+
+
 /* global d3 */
 
 $(window).load(function () {
@@ -11,10 +14,12 @@ $(window).load(function () {
     var width = $(window).width(),
         height = $(window).height(),
         rotate = [0,0],
-        active = d3.select(null);
+        active = d3.select(null),
         // active_d = d3.select(null);
-        menu_height = 185;
+        menu_height = 185,
         transform = "";
+
+    var data = [];
         
 
     var projection = d3.geo.mercator()
@@ -64,84 +69,157 @@ $(window).load(function () {
                             .style("stroke-width", "1px");
 
     var countryNames;
-    // Zdrojove IP adresy / utocnici
-    var source = [];
-    // Cilove IP adresy / obeti
-    var target = [];
-    // Vsechny udalosti
-    var events = d3.json("data/Events500.txt", function(error, events) {
-        // console.log(events);
+
+    function createStateDataEntry(state_code) {
+        var new_state_data = {
+            country       : state_code,
+            attacked_sb   : 0,      // kolikrat utocil na nekoho
+            was_attacked  : 0,      // kolikrat na nej bylo utoceno
+            sources: {              // zdrojove staty, ktere nan utocili
+                type: []
+            },
+            targets: {              // cilove staty / na ktere utoci
+                type: []
+            }
+        }
+        return new_state_data;
+    }
+
+    function createType(type) {
+        var new_type = {
+            type_id  : type,
+            count    : 0,
+            attacks  : []
+        }
+        return new_type;
+    }
+
+    function createAttackState(state_code) {
+        var new_state = {
+            code    : state_code,
+            ips     : []
+        }
+        return new_state;
+    }
+
+    function createIP(ip_addr, ev_id) {
+        var ip = {
+            ip       : ip_addr,
+            event_id : ev_id
+        }
+        return ip;
+    }
+
+    function readData(events) {
+        // console.log("Jsem v readData");
+        // console.log(data);
 
         for (var i = 0; i < events.length; i++) {
-            source_country = events[i].source.country;
+            var event_id = events[i].id;
+            var source_ip = events[i].source.ip;
+            var source_state = events[i].source.country;
+            var type = events[i].type;
 
-            // to improve 
-            // ----------- sources --------------------------------------
-            var s_country_included = false;
-            for (var j = 0; j < source.length; j++) {
-                if (source[j].country == source_country) {
-                    s_country_included = true;
-                    break;
-                }
+            // Get global data of source state
+            var r = $.grep(data, function(e){ return e.country == source_state; });
+            if (r.length == 0) {
+                curr_source_data = createStateDataEntry(source_state);
+                data.push(curr_source_data);
+            } else if (r.length == 1) {
+                curr_source_data = r[0];
+            } 
+            
+            // Get attack type
+            var r = $.grep(curr_source_data.targets.type, function(e){ return e.type_id == type; });
+            if (r.length == 0) {
+                curr_source_type = createType(type);
+                curr_source_data.targets.type.push(curr_source_type);
+            } else if (r.length == 1) {
+                curr_source_type = r[0];
             }
 
-            if (!s_country_included) {
-                var new_entry = {};
-                new_entry.country = source_country;
-                new_entry.count = 1;
-                source.push(new_entry);
+            // GET TARGETS
+            for (var j = 0; j < events[i].targets.length; j++) {
+                var target_ip = events[i].targets[j].ip;
+                var target_state = events[i].targets[j].country;
 
-            } else {
-                // jQuery fnc
-                var res = $.grep(source, function(e) { return e.country == source_country; });
-                res[0].count++;
+                // CREATE NEW ENTRY FOR THE SOURCE STATE
+                // Get the target state
+                r = $.grep(curr_source_type.attacks, function(e){ return e.code == target_state; });
+                if (r.length == 0) {
+                    // console.log(target_state);
+                    curr_attacked_state = createAttackState(target_state);
+                    curr_source_type.attacks.push(curr_attacked_state);
+                } else if (r.length == 1) {
+                    curr_attacked_state = r[0];
+                } else { console.log("weird"); }
+                
+                // Add IP addr
+                var new_target_ip = createIP(target_ip, event_id);
+                curr_attacked_state.ips.push(new_target_ip);
+
+                // Update sums 
+                curr_source_data.attacked_sb++;
+                curr_source_type.count++;
+
+
+                // CREATE NEW ENTRY FOR THE SOURCE STATE
+                // Get global data of target state
+                var r = $.grep(data, function(e){ return e.country == target_state; });
+                if (r.length == 0) {
+                    curr_target_data = createStateDataEntry(target_state);
+                    data.push(curr_target_data);
+                } else if (r.length == 1) {
+                    curr_target_data = r[0];
+                } 
+
+                // Get corresponding attack type
+                r = $.grep(curr_target_data.sources.type, function(e){ return e.type_id == type; });
+                if (r.length == 0) {
+                    curr_target_type = createType(type);
+                    curr_target_data.sources.type.push(curr_target_type);
+                } else if (r.length == 1) {
+                    curr_target_type = r[0];
+                } else { console.log("weird curr_type"); }
+                
+                // Get corresponding attacking state
+                r = $.grep(curr_target_type.attacks, function(e){ return e.code == source_state; });
+                if (r.length == 0) {
+                    curr_attacking_state = createAttackState(source_state);
+                    curr_target_type.attacks.push(curr_attacking_state);
+                } else if (r.length > 0) {
+                    curr_attacking_state = r[0];
+                } else { console.log("weird"); }
+
+                // Add IP addr
+                new_source_ip = createIP(source_ip, event_id);
+                curr_attacking_state.ips.push(new_source_ip);
+
+                // Update sums
+                curr_target_data.was_attacked++;
+                curr_target_type.count++;
+
+                
             }
-
-
-            // ---------- targets ----------------------------------------
-
-            for (var t = 0; t < events[i].targets.length; t++) {
-                var target_country = events[i].targets[t].country;
-
-                var t_country_included = false;
-
-                for (var j = 0; j < target.length; j++) {
-                    if (target[j].country == target_country) {
-                        t_country_included = true;
-                        break;
-                    }
-                }
-
-                if ( !t_country_included) {
-                    var new_entry = {};
-                    new_entry.country = target_country;
-                    new_entry.count = 1;
-                    target.push(new_entry);
-
-                } else {
-                    // jQuery fnc
-                    var res = $.grep(target, function(e) { return e.country == target_country; });
-                    res[0].count++;
-                }
-            }
-
         }
+        console.log(data);
+    }
+
+
+    // Vsechny udalosti
+    var events = d3.json("data/Events500.txt", function(error, events) {
+
+        readData(events);
 
         choropleth_source.domain([
-                            d3.min(source, function(d) { return d.count; }),
-                            d3.max(source, function(d) { return d.count; })
+                            d3.min(data, function(d) { return d.attacked_sb; }),
+                            d3.max(data, function(d) { return d.attacked_sb; })
             ]);
 
         choropleth_target.domain([
-                            d3.min(target, function(d) { return d.count; }),
-                            d3.max(target, function(d) { return d.count; })
+                            d3.min(data, function(d) { return d.was_attacked; }),
+                            d3.max(data, function(d) { return d.was_attacked; })
             ]);
-
-        console.log(choropleth_target.domain());
-
-
-
-
 
         return events;
     });
@@ -149,8 +227,8 @@ $(window).load(function () {
     function getCountryNames(callback) {
         countryNames = d3.json("data/countries.json", function(error, json) {
             if (error) return console.error(error);
-            console.log("INSIDE");
-            console.log(json["A1"]);
+            // console.log("INSIDE");
+            // console.log(json["A1"]);
 
             callback(json);
 
@@ -173,8 +251,6 @@ $(window).load(function () {
 
         // });
 
-        // console.log("OUTSIDE");
-        // console.log(countryNames);
 
         getCountryNames(function(names) {
 
@@ -187,20 +263,12 @@ $(window).load(function () {
                             return d.id;
                         })
                         .style("fill", function(d) {
-                            var result = $.grep(source, function(e){ return e.country == d.id; });
+                            var result = $.grep(data, function(e){ return e.country == d.id; });
                             if (result.length > 0) {
-                                // console.log(d.id, result[0].count);
-                                return choropleth_source(result[0].count);
+                                if (result[0].attacked_sb != 0) { 
+                                    return choropleth_source(result[0].attacked_sb);
+                                }
                             }
-
-                            // var result = $.grep(target, function(e){ return e.country == d.id; });
-                            // if (result.length > 0) {
-                            //     console.log(d.id, result[0].count);
-                            //     return choropleth_target(result[0].count);
-                            // }
-
-
-                            // return "#ccc";
                         })
                         .attr("class", "coutry-boundary")
                         .on("click", clicked);
@@ -211,16 +279,7 @@ $(window).load(function () {
                         .enter()
                         .append("text")
                         .text(function(d) {
-                            // var c = String(d.id);
-                            var t = names[String(d.id)];
-                            // if (t) return 
-                            // console.log(countryNames[c]);
-                            // console.log(countryNames[String(d.id)]);
-                            // result = $.grep(countryNames, function(e){ return e.name == d.id; });
-                            // if (result.length > 0) {
-                            //     // return result[0].name;
-                            // }
-                            return t;
+                            return names[String(d.id)];
                         })
                         .attr("x", function(d) {
                             return path.centroid(d)[0];
@@ -303,19 +362,23 @@ $(window).load(function () {
                             var result;
 
                             if (GeoMenu.getDisplayIP() == "source") {
-                                result = $.grep(source, function(e){ return e.country == d.id; });
+                                result = $.grep(data, function(e) { return e.country == d.id; })
                                 if (result.length > 0) {
-                                    return choropleth_source(result[0].count);
+                                    if (result[0].attacked_sb != 0) { 
+                                        return choropleth_source(result[0].attacked_sb);
+                                    }
                                 }
                             } else {
-                                result = $.grep(target, function(e){ return e.country == d.id; });
+                                result = $.grep(data, function(e){ return e.country == d.id; });
                                 if (result.length > 0) {
-                                    return choropleth_target(result[0].count);
+                                    if (result[0].was_attacked != 0) {
+                                        return choropleth_target(result[0].was_attacked);
+                                    }
                                 }
                             }
                         })
-
                 break;
+
             case 'showNames':
 
                 console.log("Show names: ");
@@ -343,49 +406,5 @@ $(window).load(function () {
         transform = "";
         reset();
     });
-
-
-/*
-// canvas resolution
-  var width = $(window).width() - 20,
-      height = $(window).height() - 20;
- 
-  // projection-settings for mercator    
-var projection = d3.geo.albers()
-    .center([0, 55.4])
-    .rotate([4.4, 0])
-    .parallels([50, 60])
-    .scale(6000)
-    .translate([width / 2, height / 2]);
- 
-  // defines "svg" as data type and "make canvas" command
-  var svg = d3.select("body").append("svg")
-      .attr("width", width)
-      .attr("height", height);
- 
-  // defines "path" as return of geographic features
-  var path = d3.geo.path()
-      .projection(projection);
- 
-  // group the svg layers 
-  var g = svg.append("g");
- 
-  // load data and display the map on the canvas with country geometries 
-  d3.json("data/world.json", function(error, world) {
-  if (error) return console.error(error);
-  console.log(world);
-  
-
-  svg.append("path")
-      .datum(topojson.feature(world, world.objects.places))
-      .attr("d", d3.geo.path().projection(d3.geo.mercator()));
-//});
- 
-  svg.selectAll(".subunit")
-    .data(topojson.feature(world, world.objects.unit))
-  .enter().append("path")
-    .attr("class", function(d) { return "subunit " + d.id; })
-    .attr("d", path);  
-});*/
 
 });
