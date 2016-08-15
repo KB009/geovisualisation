@@ -68,6 +68,41 @@ $(window).load(function () {
                             .attr("id", "map_wrap")
                             .style("stroke-width", "1px");
 
+    var curves = svg.append("g")
+                            .attr("class", "curves");
+                            
+                            // .attr("stroke-width", "13px")
+                            
+
+    // svg.append
+    // .attr("stroke", "yellow")
+    // .attr("stroke-width", "3px");
+
+    // svg.selectAll('path')
+    //                 .data(lineData)
+    //                 .enter().append('path')
+   // .attr('d', function(d) { return line(d.p); })
+   // .attr('stroke-width', function(d) { return d.w; })
+   // .attr('stroke', function(d) { return d.c; });
+
+    //The data for our line
+    // var lineData = [ { "x": 1,   "y": 5},  { "x": 20,  "y": 20},
+    //               { "x": 40,  "y": 10}, { "x": 60,  "y": 40},
+    //               { "x": 80,  "y": 5},  { "x": 100, "y": 60}];
+ 
+    //  //This is the accessor function we talked about above
+    //  var lineFunction = d3.svg.line()
+    //                           .x(function(d) { return d.x; })
+    //                           .y(function(d) { return d.y; })
+    //                          .interpolate("");
+
+    // svg.append("path")
+    //             .attr("d", lineFunction(lineData))
+    //             .attr("stroke", "blue")
+    //             .attr("stroke-width", 2)
+    //             .attr("fill", "none");
+
+
     var countryNames;
 
     function createStateDataEntry(state_code) {
@@ -274,31 +309,72 @@ $(window).load(function () {
                         .on("click", clicked);
 
 
-        g.selectAll("text")
-                        .data(topojson.feature(json, json.objects.countries).features)
-                        .enter()
-                        .append("text")
-                        .text(function(d) {
-                            return names[String(d.id)];
-                        })
-                        .attr("x", function(d) {
-                            return path.centroid(d)[0];
-                        })
-                        .attr("y", function(d) {
-                            return path.centroid(d)[1];
-                        })
-                        .attr("text-anchor", "middle")
-                        .attr("font-size", "6pt")
-                        .attr("font-family", "sans-serif")
-                        .attr("visibility", "hidden");
-        })
+            g.selectAll("text")
+                            .data(topojson.feature(json, json.objects.countries).features)
+                            .enter()
+                            .append("text")
+                            .text(function(d) {
+                                return names[String(d.id)];
+                            })
+                            .attr("x", function(d) {
+                                return path.centroid(d)[0];
+                            })
+                            .attr("y", function(d) {
+                                return path.centroid(d)[1];
+                            })
+                            .attr("text-anchor", "middle")
+                            .attr("font-size", "6pt")
+                            .attr("font-family", "sans-serif")
+                            .attr("visibility", "hidden");
 
+
+
+/*
+            var line = d3.line()
+                .x(function(d) { return d.x; })
+                .y(function(d) { return d.y; })
+                // .x(function(d) { return path.centroid(d)[0]; })
+                // .y(function(d) { return path.centroid(d)[1]; })
+                .curve(d3.curveBasis);
+
+            var lineData = [
+                        {x: 300, y: 500},
+                        {x: 800, y: 300},
+                        {x: 1300, y: 500}
+                        ]
+            
+
+            curves.selectAll("path")
+                            .data([1])
+                                    // .data(lineData)
+                            .enter()
+                            .append("path")
+                            .attr("class", "curves")
+                            .attr("d", function(d) { 
+                                return line(lineData); 
+
+                            })
+                            // .attr("x", function(d) {
+                            //     return path.centroid(d)[0];
+                            // })
+                            // .attr("y", function(d) {
+                            //     return path.centroid(d)[1];
+                            // })
+                            .style("stroke-width", "2px")
+                            .style("stroke", "black")
+                            .style("fill", "none");
+*/                                    
+
+        })
+ 
         
     });
 
     
 
 
+
+    
     function clicked(d) {
         if (active.node() === this) return reset();
         active.classed("active", false);
