@@ -73,146 +73,7 @@ $(window).load(function () {
                             
                             // .attr("stroke-width", "13px")
         
-    // ----------- SUNBURST PREP -----------------
-    
 
-
-
-    function rightclicked(d) {
-        var json = getData();
-        console.log(json);
-
-        var sunburst = svg.append("g")                    
-                            .attr("class", "sunburst")
-                            .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
-
-    var formatNumber = d3.format(",d");
-
-    var x = d3.scale.linear()
-        .range([0, 2 * Math.PI]);
-
-    var y = d3.scale.sqrt()
-        .range([0, radius]);
-
-    var color = d3.scale.category20c()
-                            .domain(20);
-
-    // var totalSize = 0;
-
-    var partition = d3.layout.partition()
-                        .size([2 * Math.PI, radius * radius])
-                        .value(function(d) { return d.size; });
-
-    var arc = d3.svg.arc()
-        // .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x))); })
-        // .endAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx))); })
-        // .innerRadius(function(d) { return Math.max(0, y(d.y)); })
-        // .outerRadius(function(d) { return Math.max(0, y(d.y + d.dy)); });
-        .startAngle(function(d) { return d.x; })
-        .endAngle(function(d) { return d.x + d.dx; })
-        .innerRadius(function(d) { return Math.sqrt(d.y); })
-        .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); });
-
-        d3.event.preventDefault();
-        var result = $.grep(data, function(e) { return e.country == d.id; });
-        if (result.length == 1) {
-            sunburst_data = result[0];
-        } else { 
-            sunburst_data = null;
-            return;
-        }
-        console.log(sunburst_data); 
-
-        root = buildHierarchy(sunburst_data);
-        console.log("root");
-        console.log(root);
-        console.log(json)
-        
-        // console.log("nodes(root)");
-        // console.log(nodes(root));
-
-        var nodes = partition.nodes(root);
-        // var nodes = partition.nodes(json);
-        console.log("nodes");
-        console.log(nodes);
-
-        sunburst.selectAll("path")
-                                .data(nodes)
-                                .enter()
-                                .append("svg:path")
-                                // .attr("display", function(d) { return d.depth ? null : "none"; })
-                                .attr("d", arc)
-                                .style("fill", function(d) { 
-                                return color((d.children ? d : d.parent).name); })
-                                .attr("fill-rule", "evenodd")
-
-    }
-
-    function buildHierarchy(d) {
-        // console.log(d);
-        var root = {
-            name: "root",
-            children: []
-        };
-        // console.log(d.sources.type);
-        d.sources.type.forEach(function(e) {
-            // console.log(e);
-            
-            child_attacks = e.attacks;
-            new_child = {
-                name: e.type_id,
-                children: [],
-                size: e.count
-            }
-            console.log("new child");
-            console.log(new_child);
-
-            child_attacks.forEach(function (a) {
-                new_entry = {
-                    name : a.code,
-                    size : a.ips.length
-                    // children: []
-                }
-                new_child.children.push(new_entry);
-            })
-            root.children.push(new_child);
-        })
-
-        console.log("For each children");
-        root.children.forEach(function (e) {
-            new_entry = {
-                // e.attacks
-            }
-            console.log(e);
-
-
-        });
-        console.log("hierarchy: ")
-        console.log(root);
-
-        return root;
-/*
-        console.log("d3 Hierarchy")
-        var hie = d3.hierarchy(root);
-        
-        hie.sum(function(e) { 
-            // console.log(e);
-            // return e.children ? 0 : 1; 
-            return e.size;
-        });
-
-        console.log(hie);
-        return hie;*/
-    }
-
-
-    // function children(d) {
-    //     return d.type;
-    // }
-
-
-    // --------------------------------------------------------------------------------
-    
 
 
 
@@ -383,7 +244,12 @@ $(window).load(function () {
     
 
 
-
+    
+    /////////////////////////////////////////////////////////////////////////
+    //                                                                     //
+    //                    User Interactivity Functions                     //
+    //                                                                     //
+    /////////////////////////////////////////////////////////////////////////
     
     function clicked(d) {
         if (active.node() === this) return reset();
@@ -435,6 +301,137 @@ $(window).load(function () {
         g.attr("transform", transform);
     };
 
+    
+    function rightclicked(d) {
+        createSunburst(d);
+    }   
+
+    /////////////////////////////////////////////////////////////////////////
+    //                                                                     //
+    //                    Create Sunburst Visualization                    //
+    //                                                                     //
+    /////////////////////////////////////////////////////////////////////////
+    function createSunburst(d) {
+        var sunburst = svg.append("g")                    
+                            .attr("class", "sunburst")
+                            .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
+
+        var formatNumber = d3.format(",d");
+
+        var x = d3.scale.linear()
+            .range([0, 2 * Math.PI]);
+
+        var y = d3.scale.sqrt()
+            .range([0, radius]);
+
+        var color = d3.scale.category20c()
+                                .domain(20);
+
+        var partition = d3.layout.partition()
+                            .size([2 * Math.PI, radius * radius])
+                            .value(function(d) { return d.size; });
+
+        var arc = d3.svg.arc()
+            // .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x))); })
+            // .endAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx))); })
+            // .innerRadius(function(d) { return Math.max(0, y(d.y)); })
+            // .outerRadius(function(d) { return Math.max(0, y(d.y + d.dy)); });
+            .startAngle(function(d) { return d.x; })
+            .endAngle(function(d) { return d.x + d.dx; })
+            .innerRadius(function(d) { return Math.sqrt(d.y); })
+            .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); });
+
+        d3.event.preventDefault();
+
+        var result = $.grep(data, function(e) { return e.country == d.id; });
+        
+        if (result.length == 1) {
+            sunburst_data = result[0];
+        } else { 
+            sunburst_data = null;
+            return;
+        }
+        console.log(sunburst_data); 
+
+        var hierarchy = buildHierarchy(sunburst_data);
+        console.log("hierarchy");
+        console.log(hierarchy);
+
+        var nodes = partition.nodes(hierarchy);
+        console.log("nodes");
+        console.log(nodes);
+
+        sunburst.selectAll("path")
+                                .data(nodes)
+                                .enter()
+                                .append("svg:path")
+                                // .attr("display", function(d) { return d.depth ? null : "none"; })
+                                .attr("d", arc)
+                                .style("fill", function(d) { 
+                                return color((d.children ? d : d.parent).name); })
+                                .attr("fill-rule", "evenodd")
+    }
+
+    function buildHierarchy(d) {
+        
+        var root;
+
+        if (GeoMenu.getDisplayIP() == "source") {
+            root = getSunburstData(d.sources.countries);
+
+        } else {    // target
+            root = getSunburstData(d.targets.countries);
+
+        }
+
+        console.log(root);
+
+        return root;
+    }
+
+    function getSunburstData(countries) {
+
+        var root = {
+            name: "root",
+            children: []
+        };
+
+        countries.forEach(function(country) { 
+
+            new_country_child = {
+                name     : country.code,
+                // size :
+                children : []   // attack types
+            }
+
+            country.attack_types.forEach(function(type) {
+
+                new_attack_child = { 
+                    name     : type.type_id,
+                    size     : type.count,
+                    children : []   // ip + event_id
+                }
+
+                type.ips.forEach(function(ip) {
+
+                    new_ip = {
+                        name    : ip.ip,
+                        size    : 1
+                    }
+
+                    new_attack_child.children.push(new_ip);
+                });
+
+                new_country_child.children.push(new_attack_child);
+            });
+
+            root.children.push(new_country_child);
+        })
+
+        return root;
+    }
+    // --------------------------------------------------------------------------------
+    
 
     ///////////////////////////////////////////////////////////////////
     // --------- Event listeners + button functionality --------- // //
@@ -500,9 +497,8 @@ $(window).load(function () {
     ///////////////////////////////////////////////////////////////
 
     function readData(events) {
-        // console.log("Jsem v readData");
-        // console.log(data);
 
+        // GET SOURCES
         for (var i = 0; i < events.length; i++) {
             var event_id = events[i].id;
             var source_ip = events[i].source.ip;
@@ -511,119 +507,124 @@ $(window).load(function () {
 
             // Get global data of source state
             var r = $.grep(data, function(e){ return e.country == source_state; });
+
+            // create new overview data for the source_state
             if (r.length == 0) {
-                curr_source_data = createStateDataEntry(source_state);
+                var curr_source_data = createCountryOverviewData(source_state);
                 data.push(curr_source_data);
+
+            // get data for the source_state
             } else if (r.length == 1) {
                 curr_source_data = r[0];
             } 
-            
-            // Get attack type
-            var r = $.grep(curr_source_data.targets.type, function(e){ return e.type_id == type; });
-            if (r.length == 0) {
-                curr_source_type = createType(type);
-                curr_source_data.targets.type.push(curr_source_type);
-            } else if (r.length == 1) {
-                curr_source_type = r[0];
-            }
 
             // GET TARGETS
             for (var j = 0; j < events[i].targets.length; j++) {
                 var target_ip = events[i].targets[j].ip;
                 var target_state = events[i].targets[j].country;
 
-                // CREATE NEW ENTRY FOR THE SOURCE STATE
+                // ----------- NEW ENTRY FOR THE SOURCE STATE -------------
+
                 // Get the target state
-                r = $.grep(curr_source_type.attacks, function(e){ return e.code == target_state; });
+                r = $.grep(curr_source_data.targets.countries, function(e){ return e.code == target_state; });
                 if (r.length == 0) {
-                    // console.log(target_state);
-                    curr_attacked_state = createAttackState(target_state);
-                    curr_source_type.attacks.push(curr_attacked_state);
+                    curr_attacked_state = createInvolvedCountry(target_state);
+                    curr_source_data.targets.countries.push(curr_attacked_state);
                 } else if (r.length == 1) {
                     curr_attacked_state = r[0];
-                } else { console.log("weird"); }
+                }
                 
+                // Get the attack type
+                var r = $.grep(curr_attacked_state.attack_types, function(e){ return e.type_id == type; });
+                if (r.length == 0) {
+                    curr_source_type = createType(type);
+                    curr_attacked_state.attack_types.push(curr_source_type);
+                } else if (r.length == 1) {
+                    curr_source_type = r[0];
+                }
+
                 // Add IP addr
                 var new_target_ip = createIP(target_ip, event_id);
-                curr_attacked_state.ips.push(new_target_ip);
+                curr_source_type.ips.push(new_target_ip);
 
                 // Update sums 
                 curr_source_data.attacked_sb++;
                 curr_source_type.count++;
 
 
-                // CREATE NEW ENTRY FOR THE SOURCE STATE
+                // ----------- NEW ENTRY FOR THE TARGET STATE -------------
+                 
                 // Get global data of target state
+                
                 var r = $.grep(data, function(e){ return e.country == target_state; });
                 if (r.length == 0) {
-                    curr_target_data = createStateDataEntry(target_state);
+                    curr_target_data = createCountryOverviewData(target_state);
                     data.push(curr_target_data);
                 } else if (r.length == 1) {
                     curr_target_data = r[0];
                 } 
 
+                // Get corresponding attacking state
+                r = $.grep(curr_target_data.sources.countries, function(e){ return e.code == source_state; });
+                if (r.length == 0) {
+                    curr_attacking_state = createInvolvedCountry(source_state);
+                    curr_target_data.sources.countries.push(curr_attacking_state);
+                } else if (r.length == 0) {
+                    curr_attacking_state = r[0];
+                }
+
                 // Get corresponding attack type
-                r = $.grep(curr_target_data.sources.type, function(e){ return e.type_id == type; });
+                r = $.grep(curr_attacking_state.attack_types, function(e){ return e.type_id == type; });
                 if (r.length == 0) {
                     curr_target_type = createType(type);
-                    curr_target_data.sources.type.push(curr_target_type);
+                    curr_attacking_state.attack_types.push(curr_target_type);
                 } else if (r.length == 1) {
                     curr_target_type = r[0];
-                } else { console.log("weird curr_type"); }
+                }
                 
-                // Get corresponding attacking state
-                r = $.grep(curr_target_type.attacks, function(e){ return e.code == source_state; });
-                if (r.length == 0) {
-                    curr_attacking_state = createAttackState(source_state);
-                    curr_target_type.attacks.push(curr_attacking_state);
-                } else if (r.length > 0) {
-                    curr_attacking_state = r[0];
-                } else { console.log("weird"); }
-
                 // Add IP addr
                 new_source_ip = createIP(source_ip, event_id);
-                curr_attacking_state.ips.push(new_source_ip);
+                curr_target_type.ips.push(new_source_ip);
 
                 // Update sums
                 curr_target_data.was_attacked++;
                 curr_target_type.count++;
-
-                
+ 
             }
         }
         console.log(data);
     }
 
-    function createStateDataEntry(state_code) {
-        var new_state_data = {
+    function createCountryOverviewData(state_code) {
+        var new_country_overview = {
             country       : state_code,
             attacked_sb   : 0,      // kolikrat utocil na nekoho
             was_attacked  : 0,      // kolikrat na nej bylo utoceno
             sources: {              // zdrojove staty, ktere nan utocili
-                type: []
+                countries: []
             },
             targets: {              // cilove staty / na ktere utoci
-                type: []
+                countries: []
             }
         }
-        return new_state_data;
+        return new_country_overview;
+    }
+
+    function createInvolvedCountry(state_code) {
+        var new_involved_country = {
+            code         : state_code,
+            attack_types : []
+        }
+        return new_involved_country;
     }
 
     function createType(type) {
         var new_type = {
             type_id  : type,
             count    : 0,
-            attacks  : []
+            ips      : []
         }
         return new_type;
-    }
-
-    function createAttackState(state_code) {
-        var new_state = {
-            code    : state_code,
-            ips     : []
-        }
-        return new_state;
     }
 
     function createIP(ip_addr, ev_id) {
@@ -633,78 +634,6 @@ $(window).load(function () {
         }
         return ip;
     }
-
-function getData() {
-    return {
- "name": "ref",
- "children": [
-  {
-   "name": "june11",
-   "children": [
-    {
-     "name": "atts",
-         "children": [
-          {"name": "early", "size": 11},
-          {"name": "jcp", "size": 40},
-          {"name": "jcpaft", "size": 50},
-          {"name": "stillon", "size": 195},
-          {"name": "jo",
-
-             "children": [
-              {"name": "early",  "size": 100},
-              {"name": "jcp", "size": 67},
-              {"name": "jcpaft", "size": 110},
-                 {"name": "stillon", "size": 154},
-
-               {"name": "sus1",      
-                "children": [
-                  {"name": "early",  "size": 11},
-                    {"name": "jcp", "size": 118},
-                  {"name": "jcpaft", "size": 39},
-                      {"name": "stillon", "size": 2779}
-                  ]
-                },
-
-               {"name": "sus5",
-                 "children": [
-                  {"name": "early",  "size": 0},
-                  {"name": "jcp", "size": 64},
-                  {"name": "jcpaft", "size": 410},
-                     {"name": "stillon", "size": 82}
-                  ]
-                },
-
-               {"name": "sus9",
-                 "children": [
-                  {"name": "early",  "size": 1018},
-                  {"name": "jcp", "size": 3458},
-                  {"name": "jcpaft", "size": 106},
-                     {"name": "stillon", "size": 243}
-                  ]
-                },
-
-               {"name": "sus13",
-                 "children": [
-                  {"name": "early",  "size": 110},
-                  {"name": "jcp", "size": 190},
-                  {"name": "jcpaft", "size": 80},
-                     {"name": "stillon", "size": 9190},
-                     {"name": "allsus", "size": 3970}
-                     ]
-                    }
-
-                 ]
-              }
-         ]
-        },
-
-      {"name": "noatt", "size": 30}
-    ]
-    }
-
- ]
-};
-};
 
 
 });
