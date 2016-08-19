@@ -37,6 +37,29 @@ path.active {
   fill: gray;
 }
 
+/**
+ * SUNBURST Diagram
+ */
+
+text.caption {
+  text-anchor: middle;
+}
+
+text#caption_country {
+  font-size: 2.5em;
+  font-weight: bold;
+}
+
+text#caption_type {
+  font-size: 1.6em;
+}
+
+text#caption_ip {
+  font-size: 1.4em;
+}
+
+
+
 /* responsive */
 .svg-container {
     display: inline-block;

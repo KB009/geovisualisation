@@ -71,14 +71,9 @@ $(window).load(function () {
     var curves = svg.append("g")
                             .attr("class", "curves");
                             
-                            // .attr("stroke-width", "13px")
-        
     var caption;
 
-
-
-
-
+/*
     // svg.append
     // .attr("stroke", "yellow")
     // .attr("stroke-width", "3px");
@@ -106,7 +101,7 @@ $(window).load(function () {
     //             .attr("stroke", "blue")
     //             .attr("stroke-width", 2)
     //             .attr("fill", "none");
-
+*/
 
     var countryNames;
 
@@ -311,45 +306,47 @@ $(window).load(function () {
     }
 
     function sunburstMouseover(d) {
-        // caption.selectAll("text")
-        //                     .data(d)
-        //                     .append("text")
-        //                     .text("lala")
-        //                     .attr("x", width/2)
-        //                     .attr("y", height/2)
-        //                     .attr("text-anchor", "middle")
-        //                     .attr("font-family", "sans-serif")
-        //                     .style("visibility", "");
 
         var sequence = getAncestors(d);
         console.log(sequence);
         
         showCaption(sequence);
 
-        // Fade all the segments.
+        // Fade all the segments
         d3.selectAll(".sunburst_strip")
-                        .style("opacity", 0.3);
+                                .style("opacity", 0.3);
 
-          // Then highlight only those that are an ancestor of the current segment.
+        // Highlight only those that are an ancestor of the current segment.
         d3.selectAll(".sunburst_strip")
-              .filter(function(a) {
-                        return (sequence.indexOf(a) >= 0);
-                      })
-              .style("opacity", 1);
+                                .filter(function(a) {
+                                    return (sequence.indexOf(a) >= 0);
+                                  })
+                                .style("opacity", 1);
 
         d3.selectAll(".caption").style("visibility", "");
     }
 
     function sunburstMouseleave(d) {
-        
         d3.selectAll(".caption").style("visibility", "hidden");
-
         d3.selectAll(".sunburst_strip").style("opacity", 1)
 
     }
 
     function showCaption(sequence) {
-        // var caption = d3.select(#caption)
+        // sequence.forEach(function(e) {
+            // console.log(e.name);
+            if (sequence[0]) d3.select("#caption_country").text(sequence[0].name);
+            if (sequence[1]) {
+                d3.select("#caption_type").text(sequence[1].name);
+            } else {
+                d3.select("#caption_type").text("");
+            }
+            if (sequence[2]) {
+                d3.select("#caption_ip").text(sequence[2].name);
+            } else {
+                d3.select("#caption_ip").text("");
+            }
+        // })
     }
 
     // Given a node in a partition layout, return an array of all of its ancestor
@@ -415,9 +412,7 @@ $(window).load(function () {
             .startAngle(function(d) { return d.x; })
             .endAngle(function(d) { return d.x + d.dx; })
             .innerRadius(function(d) { return Math.sqrt(d.y); })
-            // .innerRadius(function(d) { return radius * (d.y) / 100; })
             .outerRadius(function(d) { return Math.sqrt(d.y + d.dy) - 2; });
-            // .outerRadius(function(d) { return radius * (d.y + d.dy) / 100 - 2; });
 
         d3.event.preventDefault();
 
@@ -441,7 +436,8 @@ $(window).load(function () {
         sunburst.append("circle")
                                 .attr("id", "sunburst_circle")
                                 .attr("r", radius * 1.45)
-                                .attr("fill", "white");
+                                .attr("fill", "white")
+                                .on("mouseleave", sunburstMouseleave);
 
         var sunburst_paths = sunburst.selectAll("path")
                                 .data(nodes)
@@ -457,50 +453,26 @@ $(window).load(function () {
                                 .style("stroke-width", "1px")
                                 .style("stroke", "white")
                                 .style("opacity", 0.5)
-                                // .attr("fill-rule", "evenodd")
                                 .on("click", sunburstClicked)
                                 .on("mouseover", sunburstMouseover);
 
         sunburst.append("text")
                                 .attr("id", "caption_country")
                                 .attr("class", "caption")
-                                .attr("x", 0)
-                                .attr("dy", -30)
-                                .text(function(d) { return "Lala"; })
-                                .attr("text-anchor", "middle")
-                                // .attr("font-family", "sans-serif")
-                                .attr("font-size", "2em")
+                                .attr("dy", -40);
 
         sunburst.append("text")
                                 .attr("id", "caption_type")
                                 .attr("class", "caption")
-                                .attr("x", 0)
-                                .attr("dy", 5)
-                                .text(function(d) { return "Nic"; })
-                                .attr("text-anchor", "middle")
-                                // .attr("font-family", "sans-serif")
-                                .attr("font-size", "1.8em")
+                                .attr("dy", -10);
         
         sunburst.append("text")
                                 .attr("id", "caption_ip")
                                 .attr("class", "caption")
-                                .attr("x", 0)
-                                .attr("dy", 37)
-                                .text(function(d) { return "Tri"; })
-                                .attr("text-anchor", "middle")
-                                // .attr("font-family", "sans-serif")
-                                .attr("font-size", "1.4em")
+                                .attr("dy", 35);
 
-
-        // caption = sunburst.append("g")
-        //                         .attr("id", "caption")
-        //                         .append("text");
 
         totalSize = sunburst_paths.node().__data__.value;
-
-
-        d3.select("#sunburst_circle").on("mouseleave", sunburstMouseleave);
-
 
     }
 
