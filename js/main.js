@@ -73,7 +73,7 @@ $(window).load(function () {
                             
                             // .attr("stroke-width", "13px")
         
-
+    var caption;
 
 
 
@@ -304,7 +304,79 @@ $(window).load(function () {
     
     function rightclicked(d) {
         createSunburst(d);
-    }   
+    }
+
+    function sunburstClicked(d) {
+        console.log(d, d.parent);
+    }
+
+    function sunburstMouseover(d) {
+        // caption.selectAll("text")
+        //                     .data(d)
+        //                     .append("text")
+        //                     .text("lala")
+        //                     .attr("x", width/2)
+        //                     .attr("y", height/2)
+        //                     .attr("text-anchor", "middle")
+        //                     .attr("font-family", "sans-serif")
+        //                     .style("visibility", "");
+
+        var sequence = getAncestors(d);
+        console.log(sequence);
+        
+        showCaption(sequence);
+
+        // Fade all the segments.
+        d3.selectAll(".sunburst_strip")
+                        .style("opacity", 0.3);
+
+          // Then highlight only those that are an ancestor of the current segment.
+        d3.selectAll(".sunburst_strip")
+              .filter(function(a) {
+                        return (sequence.indexOf(a) >= 0);
+                      })
+              .style("opacity", 1);
+
+        d3.selectAll(".caption").style("visibility", "");
+    }
+
+    function sunburstMouseleave(d) {
+        
+        d3.selectAll(".caption").style("visibility", "hidden");
+
+        d3.selectAll(".sunburst_strip").style("opacity", 1)
+
+    }
+
+    function showCaption(sequence) {
+        // var caption = d3.select(#caption)
+    }
+
+    // Given a node in a partition layout, return an array of all of its ancestor
+    // nodes, highest first, but excluding the root.
+    function getAncestors(node) {
+      var path = [];
+      var current = node;
+      while (current.parent) {
+        path.unshift(current);
+        current = current.parent;
+      }
+      return path;
+    }
+
+    // jbostok
+    function initializeBreadcrumbTrail() {
+      // Add the svg area.
+      var trail = d3.select("#sequence").append("svg:svg")
+          .attr("width", width)
+          .attr("height", 50)
+          .attr("id", "trail");
+      // Add the label at the end, for the percentage.
+      trail.append("svg:text")
+        .attr("id", "endlabel")
+        .style("fill", "#000");
+    }
+
 
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
@@ -326,9 +398,13 @@ $(window).load(function () {
 
         var color = d3.scale.category20c()
                                 .domain(20);
+        // Total size of all segments; we set this later, after loading the data.
+        var totalSize = 0;
 
+        var sunburst_radius = radius * radius * 2;
         var partition = d3.layout.partition()
-                            .size([2 * Math.PI, radius * radius])
+                            .size([2 * Math.PI, sunburst_radius])
+                            // .size([2 * Math.PI, 100])
                             .value(function(d) { return d.size; });
 
         var arc = d3.svg.arc()
@@ -339,7 +415,9 @@ $(window).load(function () {
             .startAngle(function(d) { return d.x; })
             .endAngle(function(d) { return d.x + d.dx; })
             .innerRadius(function(d) { return Math.sqrt(d.y); })
-            .outerRadius(function(d) { return Math.sqrt(d.y + d.dy); });
+            // .innerRadius(function(d) { return radius * (d.y) / 100; })
+            .outerRadius(function(d) { return Math.sqrt(d.y + d.dy) - 2; });
+            // .outerRadius(function(d) { return radius * (d.y + d.dy) / 100 - 2; });
 
         d3.event.preventDefault();
 
@@ -351,25 +429,79 @@ $(window).load(function () {
             sunburst_data = null;
             return;
         }
-        console.log(sunburst_data); 
+        // console.log(sunburst_data); 
 
         var hierarchy = buildHierarchy(sunburst_data);
-        console.log("hierarchy");
-        console.log(hierarchy);
+        // console.log("hierarchy");
+        // console.log(hierarchy);
 
         var nodes = partition.nodes(hierarchy);
-        console.log("nodes");
-        console.log(nodes);
+        // console.log("nodes");
+        // console.log(nodes);
+        sunburst.append("circle")
+                                .attr("id", "sunburst_circle")
+                                .attr("r", radius * 1.45)
+                                .attr("fill", "white");
 
-        sunburst.selectAll("path")
+        var sunburst_paths = sunburst.selectAll("path")
                                 .data(nodes)
                                 .enter()
-                                .append("svg:path")
-                                // .attr("display", function(d) { return d.depth ? null : "none"; })
+                                .append("path")
+                                .attr("class", "sunburst_strip")
+                                .attr("display", function(d) { return d.depth ? null : "none"; })
                                 .attr("d", arc)
-                                .style("fill", function(d) { 
-                                return color((d.children ? d : d.parent).name); })
-                                .attr("fill-rule", "evenodd")
+                                .style("fill", function(d) {
+                                    // if (!d.depth) return "white";
+                                    return color((d.children ? d : d.parent).name); 
+                                })
+                                .style("stroke-width", "1px")
+                                .style("stroke", "white")
+                                .style("opacity", 0.5)
+                                // .attr("fill-rule", "evenodd")
+                                .on("click", sunburstClicked)
+                                .on("mouseover", sunburstMouseover);
+
+        sunburst.append("text")
+                                .attr("id", "caption_country")
+                                .attr("class", "caption")
+                                .attr("x", 0)
+                                .attr("dy", -30)
+                                .text(function(d) { return "Lala"; })
+                                .attr("text-anchor", "middle")
+                                // .attr("font-family", "sans-serif")
+                                .attr("font-size", "2em")
+
+        sunburst.append("text")
+                                .attr("id", "caption_type")
+                                .attr("class", "caption")
+                                .attr("x", 0)
+                                .attr("dy", 5)
+                                .text(function(d) { return "Nic"; })
+                                .attr("text-anchor", "middle")
+                                // .attr("font-family", "sans-serif")
+                                .attr("font-size", "1.8em")
+        
+        sunburst.append("text")
+                                .attr("id", "caption_ip")
+                                .attr("class", "caption")
+                                .attr("x", 0)
+                                .attr("dy", 37)
+                                .text(function(d) { return "Tri"; })
+                                .attr("text-anchor", "middle")
+                                // .attr("font-family", "sans-serif")
+                                .attr("font-size", "1.4em")
+
+
+        // caption = sunburst.append("g")
+        //                         .attr("id", "caption")
+        //                         .append("text");
+
+        totalSize = sunburst_paths.node().__data__.value;
+
+
+        d3.select("#sunburst_circle").on("mouseleave", sunburstMouseleave);
+
+
     }
 
     function buildHierarchy(d) {

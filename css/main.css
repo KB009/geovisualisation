@@ -5,7 +5,8 @@ and open the template in the editor.
 */
 body {
     margin: 0;
-    font-family: Tahoma, Geneva, sans-serif;
+    /*font-family: Tahoma, Geneva, sans-serif;*/
+    font-family: 'Open Sans', sans-serif;
 }
 
 .subunit-boundary {
@@ -56,4 +57,10 @@ path.active {
 
 #svg-container {
   /*flex: 1 1 auto;*/
+}
+
+.sunburst_strip:hover {
+  /*stroke: black !important;*/
+  stroke-width: 2px;
+  /*opacity: 1 !important;*/
 }
