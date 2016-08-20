@@ -17,16 +17,45 @@ $(window).load(function () {
         active = d3.select(null),
         // active_d = d3.select(null);
         menu_height = 185,
-        transform = "",
-        radius = 150;   // Math.min(width, height) / 4
+        transform = "";
+        // radius = 150;   // Math.min(width, height) / 4
 
     var data = [];
+
+    // ---------- MAP -------------
 
     var projection = d3.geo.mercator()
                             .scale(width/7)
                             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path().projection(projection);
+
+    // ---------- SUNBURST -------------
+    
+    var formatNumber = d3.format(",d");
+
+    var x = d3.scale.linear()
+                        .range([0, 2 * Math.PI]);
+
+    var y = d3.scale.sqrt()
+                        .range([0, radius]);
+
+    var radius = 150;                   // Math.min(width, height) / 4
+    var sunburst_radius = radius * radius * 2;
+
+    var totalSize = 0;                  // Total size of all segments
+
+    var partition = d3.layout.partition()
+                        .size([2 * Math.PI, sunburst_radius])
+                        .value(function(d) { return d.size; });
+
+    var arc = d3.svg.arc()
+                        .startAngle(function(d) { return d.x; })
+                        .endAngle(function(d) { return d.x + d.dx; })
+                        .innerRadius(function(d) { return Math.sqrt(d.y); })
+                        .outerRadius(function(d) { return Math.sqrt(d.y + d.dy) - 2; });
+
+    // ---------- COLOR SCHEMES -------------
 
     // color scheme for source ip's choroplet
     var choropleth_source = d3.scale.quantize()
@@ -37,7 +66,12 @@ $(window).load(function () {
     var choropleth_target = d3.scale.quantize()
                                 .range(["rgb(252,187,161)", "rgb(252,146,114)", 
                                     "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
+    // color scheme for sunburst
+    var color = d3.scale.category20c()
+                                .domain(100);
     
+    // ------------- BEHAVIOUR --------------
+
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
                             .on("drag", function() {
@@ -53,6 +87,8 @@ $(window).load(function () {
     var zoom = d3.behavior.zoom()
                             .scaleExtent([0.5, 10])
                             .on("zoom", zoomed);
+
+    // ------------- SVG --------------
 
     var svg = d3.select("body").append("svg")
                             // .attr("width", width)
@@ -71,7 +107,11 @@ $(window).load(function () {
     var curves = svg.append("g")
                             .attr("class", "curves");
                             
-    var caption;
+    var sunburst_wrap = svg.append("g")                    
+                            .attr("id", "sunburst_wrap")
+                            .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
+
+    var sunburst;
 
 /*
     // svg.append
@@ -298,6 +338,9 @@ $(window).load(function () {
 
     
     function rightclicked(d) {
+        d3.event.preventDefault();
+
+        d3.selectAll("#sunburst").remove();
         createSunburst(d);
     }
 
@@ -365,7 +408,6 @@ $(window).load(function () {
     function sunburstMouseleave(d) {
         d3.selectAll(".caption").style("visibility", "hidden");
         d3.selectAll(".sunburst_strip").style("opacity", 1)
-
     }
 
     function showCaption(sequence) {
@@ -416,41 +458,11 @@ $(window).load(function () {
     //                    Create Sunburst Visualization                    //
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
+    
     function createSunburst(d) {
-        var sunburst = svg.append("g")                    
-                            .attr("class", "sunburst")
-                            .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
 
-        var formatNumber = d3.format(",d");
-
-        var x = d3.scale.linear()
-            .range([0, 2 * Math.PI]);
-
-        var y = d3.scale.sqrt()
-            .range([0, radius]);
-
-        var color = d3.scale.category20c()
-                                .domain(20);
-        // Total size of all segments; we set this later, after loading the data.
-        var totalSize = 0;
-
-        var sunburst_radius = radius * radius * 2;
-        var partition = d3.layout.partition()
-                            .size([2 * Math.PI, sunburst_radius])
-                            // .size([2 * Math.PI, 100])
-                            .value(function(d) { return d.size; });
-
-        var arc = d3.svg.arc()
-            // .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x))); })
-            // .endAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx))); })
-            // .innerRadius(function(d) { return Math.max(0, y(d.y)); })
-            // .outerRadius(function(d) { return Math.max(0, y(d.y + d.dy)); });
-            .startAngle(function(d) { return d.x; })
-            .endAngle(function(d) { return d.x + d.dx; })
-            .innerRadius(function(d) { return Math.sqrt(d.y); })
-            .outerRadius(function(d) { return Math.sqrt(d.y + d.dy) - 2; });
-
-        d3.event.preventDefault();
+        sunburst = sunburst_wrap.append("g")
+                            .attr("id", "sunburst");
 
         var result = $.grep(data, function(e) { return e.country == d.id; });
         
@@ -460,7 +472,6 @@ $(window).load(function () {
             sunburst_data = null;
             return;
         }
-        // console.log(sunburst_data); 
 
         var hierarchy = buildHierarchy(sunburst_data);
         // console.log("hierarchy");
@@ -745,7 +756,7 @@ $(window).load(function () {
                 } else if (r.length == 1) {
                     curr_source_ip = r[0];
                 }
-                
+
                 // Update sums 
                 curr_source_ip.count++;
                 curr_target_data.was_attacked++;
