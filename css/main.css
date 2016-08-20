@@ -58,6 +58,14 @@ text#caption_ip {
   font-size: 1.4em;
 }
 
+.visible_strip {
+  visibility: visible;
+}
+
+.invisible_strip {
+  visibility: hidden !important;
+}
+
 
 
 /* responsive */

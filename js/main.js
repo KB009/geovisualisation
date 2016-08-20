@@ -302,13 +302,49 @@ $(window).load(function () {
     }
 
     function sunburstClicked(d) {
-        console.log(d, d.parent);
+        console.log(d);
+        // console.log(d, d.parent);
+        switch(d.depth) {
+
+        //     case 1:     // country
+        //     case 2:     // attack type
+
+        //         // d3.selectAll(".sunburst_strip").on("mouseover", null);
+        //         var curr_children = d3.selectAll(".sunburst_strip")
+        //                             .filter(function(a) {
+        //                                 return (a.parent == d);
+        //                             })
+        //                             .on("mouseover", null);
+        //         // d3.selectAll(".sunburst_strip")
+        //         //                     .filter(function(a) {
+        //         //                         return (a.parent == d);
+        //         //                     })
+        //         //                     .on("mouseover", null)
+        //                             // .classed("invisible_strip", false);
+        //         curr_children.style("visibility", "");
+
+        //         curr_children.each("end", function() {
+        //                                 d3.select(this).on("mouseover", sunburstMouseover)
+        //                             });
+
+        //         // d3.selectAll(".sunburst_strip").on("mouseover", sunburstMouseover);
+
+        //         break;
+
+            case 3:     // ip
+                console.log("Open event " + d.event_id);
+                // console.log(d.event_id);
+
+
+                break; 
+        }
+
     }
 
     function sunburstMouseover(d) {
 
         var sequence = getAncestors(d);
-        console.log(sequence);
+        // console.log(sequence);
         
         showCaption(sequence);
 
@@ -447,14 +483,22 @@ $(window).load(function () {
                                 .attr("display", function(d) { return d.depth ? null : "none"; })
                                 .attr("d", arc)
                                 .style("fill", function(d) {
-                                    // if (!d.depth) return "white";
                                     return color((d.children ? d : d.parent).name); 
                                 })
+                                // show only first level
+                                // .style("visibility", function(d) {
+                                //     if (d.depth != 1) return "hidden";
+                                //     return "";
+                                // })
                                 .style("stroke-width", "1px")
                                 .style("stroke", "white")
                                 .style("opacity", 0.5)
+                                // .classed("invisible_strip", function(d) {
+                                //     if (d.depth != 1) return true;
+                                //     return false;
+                                // })
                                 .on("click", sunburstClicked)
-                                .on("mouseover", sunburstMouseover);
+                                .on("mouseenter", sunburstMouseover);
 
         sunburst.append("text")
                                 .attr("id", "caption_country")
@@ -520,7 +564,8 @@ $(window).load(function () {
 
                     new_ip = {
                         name    : ip.ip,
-                        size    : 1
+                        size    : 1,
+                        event_id: ip.event_id
                     }
 
                     new_attack_child.children.push(new_ip);
