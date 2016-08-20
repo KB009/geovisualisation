@@ -564,7 +564,7 @@ $(window).load(function () {
 
                     new_ip = {
                         name    : ip.ip,
-                        size    : 1,
+                        size    : ip.count,
                         event_id: ip.event_id
                     }
 
@@ -693,10 +693,15 @@ $(window).load(function () {
                 }
 
                 // Add IP addr
-                var new_target_ip = createIP(target_ip, event_id);
-                curr_source_type.ips.push(new_target_ip);
-
+                var r = $.grep(curr_source_type.ips, function(e){ return e.ip == target_ip; });
+                if (r.length == 0) {
+                    curr_target_ip = createIP(target_ip, event_id);
+                    curr_source_type.ips.push(curr_target_ip);
+                } else if (r.length == 1) {
+                    curr_target_ip = r[0];
+                }
                 // Update sums 
+                curr_target_ip.count++;
                 curr_source_data.attacked_sb++;
                 curr_source_type.count++;
 
@@ -732,10 +737,17 @@ $(window).load(function () {
                 }
                 
                 // Add IP addr
-                new_source_ip = createIP(source_ip, event_id);
-                curr_target_type.ips.push(new_source_ip);
-
-                // Update sums
+                
+                var r = $.grep(curr_target_type.ips, function(e){ return e.ip == source_ip; });
+                if (r.length == 0) {
+                    curr_source_ip = createIP(source_ip, event_id);
+                    curr_target_type.ips.push(curr_source_ip);
+                } else if (r.length == 1) {
+                    curr_source_ip = r[0];
+                }
+                
+                // Update sums 
+                curr_source_ip.count++;
                 curr_target_data.was_attacked++;
                 curr_target_type.count++;
  
@@ -779,7 +791,8 @@ $(window).load(function () {
     function createIP(ip_addr, ev_id) {
         var ip = {
             ip       : ip_addr,
-            event_id : ev_id
+            event_id : ev_id,
+            count    : 0
         }
         return ip;
     }
