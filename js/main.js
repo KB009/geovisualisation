@@ -228,8 +228,12 @@ $(window).load(function () {
     
     function rightclicked(d) {
         d3.event.preventDefault();
+        if (active.node() === this && d3.selectAll("#sunburst")[0].length == 1) {
+            removeSunburst();
+            unfocus();
+            return;
+        }
         removeSunburst();
-        if (active.node() === this) return unfocus();
         
         active.classed("active", false);
         active = d3.select(this).classed("active", true);
@@ -301,7 +305,6 @@ $(window).load(function () {
 
         active.classed("active", false);
         active = d3.select(null);
-        // active_d = d3.select(null);
 
         g.transition()
             .duration(750)
@@ -519,7 +522,6 @@ $(window).load(function () {
     }
 
     function getSunburstData(countries) {
-
 
         var root = {
             name: "root",
