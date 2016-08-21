@@ -215,7 +215,7 @@ $(window).load(function () {
     
 
     function clicked(d) {
-        console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
+        // console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
         // console.log(data)
         removeSunburst();
         if (active.node() === this) return unfocus();
@@ -228,6 +228,10 @@ $(window).load(function () {
     
     function rightclicked(d) {
         d3.event.preventDefault();
+
+        // in case there is no data for clicked country, return
+        if (($.grep(data, function(e) { return e.country == d.id; })).length == 0) return;
+
         if (active.node() === this && d3.selectAll("#sunburst")[0].length == 1) {
             removeSunburst();
             unfocus();
@@ -616,7 +620,7 @@ $(window).load(function () {
     });
 
     $('#assignUnknown').click(function() {
-        console.log(transform);
+        console.log(data);
     });
 
     $('#defaultDisplay').click(function() {
