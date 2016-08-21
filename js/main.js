@@ -213,6 +213,56 @@ $(window).load(function () {
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
     
+
+    function clicked(d) {
+        console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
+        // console.log(data)
+        removeSunburst();
+        if (active.node() === this) return unfocus();
+
+        active.classed("active", false);
+        active = d3.select(this).classed("active", true);
+
+        focusOnCountry(d);
+    }
+    
+    function rightclicked(d) {
+        d3.event.preventDefault();
+        removeSunburst();
+        if (active.node() === this) return unfocus();
+        
+        active.classed("active", false);
+        active = d3.select(this).classed("active", true);
+        
+        createSunburst(d);
+        focusOnCountry(d);
+    }
+    
+    d3.select(window).on('resize', function() {
+        width = $(window).width();
+        height = $(window).height();
+    });
+
+
+    function displayTheWorld() {
+        blockTransform = false;
+
+        active.classed("active", false);
+        active = d3.select(null);
+        
+        transform = "";
+        zoom.scale(1);
+        zoom.translate([0, 0]);
+
+        g.transition()
+            .duration(750)
+            .style("stroke-width", "1.5px")
+            .attr("transform", transform);
+
+        removeSunburst();
+        // d3.selectAll("#sunburst").remove();
+    }
+
     function focusOnCountry(d) {
         blockTransform = true;
 
@@ -245,53 +295,6 @@ $(window).load(function () {
         
     }
 
-    function clicked(d) {
-        removeSunburst();
-        if (active.node() === this) return unfocus();
-
-        active.classed("active", false);
-        active = d3.select(this).classed("active", true);
-
-        focusOnCountry(d);
-    }
-    
-    function rightclicked(d) {
-        d3.event.preventDefault();
-        removeSunburst();
-        if (active.node() === this) return unfocus();
-        
-        active.classed("active", false);
-        active = d3.select(this).classed("active", true);
-        
-        createSunburst(d);
-        focusOnCountry(d);
-    }
-    
-    d3.select(window).on('resize', function() {
-        width = $(window).width();
-        height = $(window).height();
-    });
-
-
-    function displayTheWorld() {
-        blockTransform = false;
-        
-        active.classed("active", false);
-        active = d3.select(null);
-        
-        transform = "";
-        zoom.scale(1);
-        zoom.translate([0, 0]);
-
-        g.transition()
-            .duration(750)
-            .style("stroke-width", "1.5px")
-            .attr("transform", transform);
-
-        removeSunburst();
-        // d3.selectAll("#sunburst").remove();
-    }
-
     // Reset to the last user transformation
     function unfocus() {
         blockTransform = false;
@@ -316,8 +319,6 @@ $(window).load(function () {
     };
 
     function sunburstClicked(d) {
-        // console.log(d);
-        // console.log(d, d.parent);
         switch(d.depth) {
 /*
         //     case 1:     // country
@@ -410,19 +411,6 @@ $(window).load(function () {
       return path;
     }
 
-    // jbostok
-    function initializeBreadcrumbTrail() {
-      // Add the svg area.
-      var trail = d3.select("#sequence").append("svg:svg")
-          .attr("width", width)
-          .attr("height", 50)
-          .attr("id", "trail");
-      // Add the label at the end, for the percentage.
-      trail.append("svg:text")
-        .attr("id", "endlabel")
-        .style("fill", "#000");
-    }
-
 
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
@@ -434,6 +422,14 @@ $(window).load(function () {
     }
 
     function createSunburst(d) {
+
+        var clicked_country = ($.grep(data, function(e) { return e.country == d.id; }))[0];
+        if (GeoMenu.getDisplayIP() == "source") {
+            if (clicked_country.attacked_sb == 0) return;
+        } else {
+            if (clicked_country.was_attacked == 0) return;
+        }
+
         blockTransform = true;
 
         sunburst = sunburst_wrap.append("g")
@@ -510,19 +506,20 @@ $(window).load(function () {
         var root;
 
         if (GeoMenu.getDisplayIP() == "source") {
-            root = getSunburstData(d.sources.countries);
+            root = getSunburstData(d.targets.countries);
 
         } else {    // target
-            root = getSunburstData(d.targets.countries);
+            root = getSunburstData(d.sources.countries);    // ziskej data o zdrojovych statech
 
         }
 
-        console.log(root);
+        // console.log(root);
 
         return root;
     }
 
     function getSunburstData(countries) {
+
 
         var root = {
             name: "root",
