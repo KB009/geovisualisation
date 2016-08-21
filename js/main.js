@@ -15,12 +15,12 @@ $(window).load(function () {
         height = $(window).height(),
         rotate = [0,0],
         active = d3.select(null),
-        // active_d = d3.select(null);
         menu_height = 185,
         transform = "";
-        // radius = 150;   // Math.min(width, height) / 4
+        // active_d = d3.select(null);
 
     var data = [];
+    var countryNames;
 
     // ---------- MAP -------------
 
@@ -66,6 +66,7 @@ $(window).load(function () {
     var choropleth_target = d3.scale.quantize()
                                 .range(["rgb(252,187,161)", "rgb(252,146,114)", 
                                     "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
+
     // color scheme for sunburst
     var color = d3.scale.category20c()
                                 .domain(100);
@@ -112,38 +113,6 @@ $(window).load(function () {
                             .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
 
     var sunburst;
-
-/*
-    // svg.append
-    // .attr("stroke", "yellow")
-    // .attr("stroke-width", "3px");
-
-    // svg.selectAll('path')
-    //                 .data(lineData)
-    //                 .enter().append('path')
-   // .attr('d', function(d) { return line(d.p); })
-   // .attr('stroke-width', function(d) { return d.w; })
-   // .attr('stroke', function(d) { return d.c; });
-
-    //The data for our line
-    // var lineData = [ { "x": 1,   "y": 5},  { "x": 20,  "y": 20},
-    //               { "x": 40,  "y": 10}, { "x": 60,  "y": 40},
-    //               { "x": 80,  "y": 5},  { "x": 100, "y": 60}];
- 
-    //  //This is the accessor function we talked about above
-    //  var lineFunction = d3.svg.line()
-    //                           .x(function(d) { return d.x; })
-    //                           .y(function(d) { return d.y; })
-    //                          .interpolate("");
-
-    // svg.append("path")
-    //             .attr("d", lineFunction(lineData))
-    //             .attr("stroke", "blue")
-    //             .attr("stroke-width", 2)
-    //             .attr("fill", "none");
-*/
-
-    var countryNames;
 
 
     // Vsechny udalosti
@@ -233,51 +202,8 @@ $(window).load(function () {
                             .attr("font-family", "sans-serif")
                             .attr("visibility", "hidden");
 
-
-
-/*
-            var line = d3.line()
-                .x(function(d) { return d.x; })
-                .y(function(d) { return d.y; })
-                // .x(function(d) { return path.centroid(d)[0]; })
-                // .y(function(d) { return path.centroid(d)[1]; })
-                .curve(d3.curveBasis);
-
-            var lineData = [
-                        {x: 300, y: 500},
-                        {x: 800, y: 300},
-                        {x: 1300, y: 500}
-                        ]
-            
-
-            curves.selectAll("path")
-                            .data([1])
-                                    // .data(lineData)
-                            .enter()
-                            .append("path")
-                            .attr("class", "curves")
-                            .attr("d", function(d) { 
-                                return line(lineData); 
-
-                            })
-                            // .attr("x", function(d) {
-                            //     return path.centroid(d)[0];
-                            // })
-                            // .attr("y", function(d) {
-                            //     return path.centroid(d)[1];
-                            // })
-                            .style("stroke-width", "2px")
-                            .style("stroke", "black")
-                            .style("fill", "none");
-*/                                    
-
         })
- 
-        
     });
-
-    
-
 
     
     /////////////////////////////////////////////////////////////////////////
@@ -318,12 +244,26 @@ $(window).load(function () {
         height = $(window).height();
     });
 
-    
+    function displayTheWorld() {
+        active.classed("active", false);
+        active = d3.select(null);
+        transform = "";
+        zoom.scale(1);
+        zoom.translate([0, 0]);
+
+        g.transition()
+            .duration(750)
+            .style("stroke-width", "1.5px")
+            .attr("transform", transform);
+
+        d3.selectAll("#sunburst").remove();
+    }
+
     // Go to default display / the whole world
     function reset() {
         active.classed("active", false);
         active = d3.select(null);
-        active_d = d3.select(null);
+        // active_d = d3.select(null);
 
         g.transition()
             .duration(750)
@@ -348,7 +288,7 @@ $(window).load(function () {
         console.log(d);
         // console.log(d, d.parent);
         switch(d.depth) {
-
+/*
         //     case 1:     // country
         //     case 2:     // attack type
 
@@ -373,7 +313,7 @@ $(window).load(function () {
         //         // d3.selectAll(".sunburst_strip").on("mouseover", sunburstMouseover);
 
         //         break;
-
+*/
             case 3:     // ip
                 console.log("Open event " + d.event_id);
                 // console.log(d.event_id);
@@ -528,7 +468,6 @@ $(window).load(function () {
 
 
         totalSize = sunburst_paths.node().__data__.value;
-
     }
 
     function buildHierarchy(d) {
@@ -643,12 +582,11 @@ $(window).load(function () {
     });
 
     $('#assignUnknown').click(function() {
-
+        console.log(transform);
     });
 
     $('#defaultDisplay').click(function() {
-        transform = "";
-        reset();
+        displayTheWorld();
     });
 
 
@@ -810,3 +748,74 @@ $(window).load(function () {
 
 
 });
+
+
+/*
+    
+    CURVES
+    // svg.append
+    // .attr("stroke", "yellow")
+    // .attr("stroke-width", "3px");
+
+    // svg.selectAll('path')
+    //                 .data(lineData)
+    //                 .enter().append('path')
+   // .attr('d', function(d) { return line(d.p); })
+   // .attr('stroke-width', function(d) { return d.w; })
+   // .attr('stroke', function(d) { return d.c; });
+
+    //The data for our line
+    // var lineData = [ { "x": 1,   "y": 5},  { "x": 20,  "y": 20},
+    //               { "x": 40,  "y": 10}, { "x": 60,  "y": 40},
+    //               { "x": 80,  "y": 5},  { "x": 100, "y": 60}];
+ 
+    //  //This is the accessor function we talked about above
+    //  var lineFunction = d3.svg.line()
+    //                           .x(function(d) { return d.x; })
+    //                           .y(function(d) { return d.y; })
+    //                          .interpolate("");
+
+    // svg.append("path")
+    //             .attr("d", lineFunction(lineData))
+    //             .attr("stroke", "blue")
+    //             .attr("stroke-width", 2)
+    //             .attr("fill", "none");
+*/
+
+/*
+    Curves
+
+            var line = d3.line()
+                .x(function(d) { return d.x; })
+                .y(function(d) { return d.y; })
+                // .x(function(d) { return path.centroid(d)[0]; })
+                // .y(function(d) { return path.centroid(d)[1]; })
+                .curve(d3.curveBasis);
+
+            var lineData = [
+                        {x: 300, y: 500},
+                        {x: 800, y: 300},
+                        {x: 1300, y: 500}
+                        ]
+            
+
+            curves.selectAll("path")
+                            .data([1])
+                                    // .data(lineData)
+                            .enter()
+                            .append("path")
+                            .attr("class", "curves")
+                            .attr("d", function(d) { 
+                                return line(lineData); 
+
+                            })
+                            // .attr("x", function(d) {
+                            //     return path.centroid(d)[0];
+                            // })
+                            // .attr("y", function(d) {
+                            //     return path.centroid(d)[1];
+                            // })
+                            .style("stroke-width", "2px")
+                            .style("stroke", "black")
+                            .style("fill", "none");
+*/                                    
