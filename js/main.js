@@ -16,7 +16,8 @@ $(window).load(function () {
         rotate = [0,0],
         active = d3.select(null),
         menu_height = 185,
-        transform = "";
+        transform = ""
+        blockTransform = false;
         // active_d = d3.select(null);
 
     var data = [];
@@ -212,11 +213,11 @@ $(window).load(function () {
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
     
-    function clicked(d) {
-        if (active.node() === this) return reset();
-        active.classed("active", false);
-        active = d3.select(this).classed("active", true);
-        // active_d = d;
+    function focusOnCountry(d) {
+        blockTransform = true;
+
+        // active.classed("active", false);
+        // active = d3.select(this).classed("active", true);
 
         // Zoom on a clicked country
         var bounds = path.bounds(d),                // [[left, top], [right, bottom]]
@@ -227,6 +228,10 @@ $(window).load(function () {
             scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
             
+
+        // zoom.scale(scale);
+        // zoom.translate(translate);
+
         var g_width = document.getElementById("map_wrap").getBBox().width;
         // console.log("Country bb: " + dx + " map_wrap bb: " + 0.9 * g_width);
         // console.log("Bound box: " + dx + " right: " + bounds[1][0] + " left: " + bounds[0][0]);
@@ -237,6 +242,29 @@ $(window).load(function () {
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+        
+    }
+
+    function clicked(d) {
+        removeSunburst();
+        if (active.node() === this) return unfocus();
+
+        active.classed("active", false);
+        active = d3.select(this).classed("active", true);
+
+        focusOnCountry(d);
+    }
+    
+    function rightclicked(d) {
+        d3.event.preventDefault();
+        removeSunburst();
+        if (active.node() === this) return unfocus();
+        
+        active.classed("active", false);
+        active = d3.select(this).classed("active", true);
+        
+        createSunburst(d);
+        focusOnCountry(d);
     }
     
     d3.select(window).on('resize', function() {
@@ -244,9 +272,13 @@ $(window).load(function () {
         height = $(window).height();
     });
 
+
     function displayTheWorld() {
+        blockTransform = false;
+        
         active.classed("active", false);
         active = d3.select(null);
+        
         transform = "";
         zoom.scale(1);
         zoom.translate([0, 0]);
@@ -256,11 +288,14 @@ $(window).load(function () {
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
 
-        d3.selectAll("#sunburst").remove();
+        removeSunburst();
+        // d3.selectAll("#sunburst").remove();
     }
 
-    // Go to default display / the whole world
-    function reset() {
+    // Reset to the last user transformation
+    function unfocus() {
+        blockTransform = false;
+
         active.classed("active", false);
         active = d3.select(null);
         // active_d = d3.select(null);
@@ -271,21 +306,17 @@ $(window).load(function () {
             .attr("transform", transform);
     };
 
+    
+
     function zoomed() {
-        transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
-        g.attr("transform", transform);
+        if (!blockTransform) {
+            transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+            g.attr("transform", transform);
+        }
     };
 
-    
-    function rightclicked(d) {
-        d3.event.preventDefault();
-
-        d3.selectAll("#sunburst").remove();
-        createSunburst(d);
-    }
-
     function sunburstClicked(d) {
-        console.log(d);
+        // console.log(d);
         // console.log(d, d.parent);
         switch(d.depth) {
 /*
@@ -398,8 +429,12 @@ $(window).load(function () {
     //                    Create Sunburst Visualization                    //
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
-    
+    function removeSunburst() {
+        d3.selectAll("#sunburst").remove();
+    }
+
     function createSunburst(d) {
+        blockTransform = true;
 
         sunburst = sunburst_wrap.append("g")
                             .attr("id", "sunburst");
