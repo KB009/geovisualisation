@@ -14,6 +14,7 @@ $(window).load(function () {
     var width = $(window).width(),
         height = $(window).height(),
         rotate = [0,0],
+        translate = [width/2, height/2],
         active = d3.select(null),
         menu_height = 185,
         transform = ""
@@ -22,6 +23,8 @@ $(window).load(function () {
 
     var data = [];
     var countryNames;
+
+    var svg;
 
     // ---------- MAP -------------
 
@@ -41,7 +44,7 @@ $(window).load(function () {
     var y = d3.scale.sqrt()
                         .range([0, radius]);
 
-    var radius = 150;                   // Math.min(width, height) / 4
+    var radius = Math.min((height - menu_height)/2 * 0.6, width/2 * 0.6);                   // Math.min(width, height) / 4
     var sunburst_radius = radius * radius * 2;
 
     var totalSize = 0;                  // Total size of all segments
@@ -77,41 +80,75 @@ $(window).load(function () {
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
                             .on("drag", function() {
+                                // console.log(d);
 
-                                rotate[0] = d3.event.x;
-                                projection.rotate(rotate);
+                                // rotate[0] = d3.event.x / 2;
+                                rotate[0] += d3.event.x;
+                                // translate[0] = 0;
+                                translate[1] += d3.event.y;
+                                // svgHeight = document.getElementById("map_wrap").getBBox().height;
+                                // console.log("map_wrap " + svgHeight);
+                                if (translate[1] > height) {
+                                    translate[1] = height;
+                                }
+                                if (translate[1] < 0) {
+                                    translate[1] = 0;
+                                }
+                                
+                                console.log(translate[1]);
+                                // d.y += d3.event.dy; 
+                                // rotate[1] = d3.event.y;
+                                projection.rotate(rotate).translate(translate);
                                 path = d3.geo.path().projection(projection);
 
-                                d3.selectAll("path").attr("d", path);
+                                d3.selectAll("path")
+                                            // .transition()
+                                            // .delay(1000)
+                                            // .duration(750)
+                                            .attr("d", path);
 
                             });  
 
     var zoom = d3.behavior.zoom()
-                            .scaleExtent([0.5, 10])
+                            .scaleExtent([1, 10])
                             .on("zoom", zoomed);
 
     // ------------- SVG --------------
 
-    var svg = d3.select("body").append("svg")
+    svg = d3.select("body").append("svg")
+                                .attr("id", "svg")
                             // .attr("width", width)
                             // .attr("height", height)
                             // .attr("preserveAspectRatio", "xMinYMin meet")
                             .attr("viewBox", "0 0 " + width + " " + height)
                             // .classed("svg-content-responsive", true)
                             //.on("click", reset)
-                            .call(drag)
-                            .call(zoom);
+                            // .call(drag)
+                            // .call(zoom);
+                            // 
 
     var g = svg.append("g")
                             .attr("id", "map_wrap")
-                            .style("stroke-width", "1px");
+                            .style("stroke-width", "1px")
+
+    g.append("rect").attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("opacity", "0")
+                    .call(zoom)
+                    .on("mousedown.zoom", null)
+                    .on("touchstart.zoom", null)
+                    .on("touchmove.zoom", null)
+                    .on("touchend.zoom", null)
+                    .call(drag);
+
+                      // .style("stroke-width", "2px").style("stroke", "black")
 
     var curves = svg.append("g")
                             .attr("class", "curves");
                             
     var sunburst_wrap = svg.append("g")                    
                             .attr("id", "sunburst_wrap")
-                            .attr("transform", "translate(" + width/2 + "," + (height/2) + ")");
+                            .attr("transform", "translate(" + width/2 + "," + ((height - menu_height)/2) + ")");
 
     var sunburst;
 
@@ -180,9 +217,17 @@ $(window).load(function () {
                                 }
                             }
                         })
-                        .attr("class", "coutry-boundary")
+                        .attr("class", "country-boundary")
                         .on("click", clicked)
-                        .on("contextmenu", rightclicked);
+                        .on("contextmenu", rightclicked)
+                        .call(zoom)
+                        .on("mousedown.zoom", null)
+                        .on("touchstart.zoom", null)
+                        .on("touchmove.zoom", null)
+                        .on("touchend.zoom", null)
+                        .call(drag);
+                        // .call(drag);
+
 
 
             g.selectAll("text")
@@ -203,7 +248,12 @@ $(window).load(function () {
                             .attr("font-family", "sans-serif")
                             .attr("visibility", "hidden");
 
+            // initFocus();
         })
+
+
+        // zoomOn
+
     });
 
     
@@ -217,6 +267,8 @@ $(window).load(function () {
     function clicked(d) {
         // console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
         // console.log(data)
+        console.log(d.id);
+        console.log(path.bounds(d));
         removeSunburst();
         if (active.node() === this) return unfocus();
 
@@ -271,6 +323,70 @@ $(window).load(function () {
         // d3.selectAll("#sunburst").remove();
     }
 
+    function initFocus() {
+        
+        var xMin = width,
+            xMax = 0, 
+            yMin = height, 
+            yMax = 0,
+            left, right, top, bottom,
+            dx, dy, x, y;
+
+        activeCountries = d3.selectAll(".country-boundary")
+                                    .filter(function(d) {
+                                        var result = $.grep(data, function(e){ return e.country == d.id; });
+                                        if (result.length > 0 && GeoMenu.getDisplayIP() == "source") {
+                                            return result[0].attacked_sb != 0;
+                                        } else if (result.length > 0 && GeoMenu.getDisplayIP() == "target") {
+                                            return result[0].was_attacked != 0;
+                                        } else return false;
+                                    }).each(function(d) {
+                                        var bounds = path.bounds(d);
+                                        // console.log(d.id);
+                                        // console.log(bounds);
+                                        if (bounds[0][0] < xMin) {  // left  
+                                            xMin = bounds[0][0];
+                                            left = d.id;
+                                        }
+                                        if (bounds[1][0] > xMax) {  // right  
+                                            xMax = bounds[1][0];
+                                            right = d.id;
+                                        }
+                                        if (bounds[0][1] < yMin) {  // top  
+                                            yMin = bounds[0][1];
+                                            top = d.id;
+                                        }
+                                        if (bounds[1][1] > yMax) {  // bottom  
+                                            yMax = bounds[1][1];
+                                            bottom = d.id;
+                                        }
+                                    })
+
+        // console.log(xMin, xMax, yMin, yMax);
+        // console.log(left, right, top, bottom);
+       
+        dx = xMax - xMin,       // right - left
+        dy = yMax - yMin,       // bottom - top
+        x = (xMax - xMin) / 2;  // (left - rigth) / 2
+        if (yMin < 0) {
+            y = yMax/2;
+        } else {
+            y = (yMin + yMax) / 2;  // (top - bottom) / 2
+        }
+        // console.log(dx, dy, x, y);
+
+
+        scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
+        translate = [width / 2 - scale * x, height / 2 - scale * y]
+        // console.log(scale, translate);
+
+        g.transition()
+                    .duration(750)
+                    .style("stroke-width", 1.5 / scale + "px")
+                    .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+        
+    }
+
     function focusOnCountry(d) {
         blockTransform = true;
 
@@ -285,6 +401,7 @@ $(window).load(function () {
             y = (bounds[0][1] + bounds[1][1]) / 2,  // (top - bottom) / 2
             scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
+        console.log(scale, translate);
             
 
         // zoom.scale(scale);
@@ -620,7 +737,8 @@ $(window).load(function () {
     });
 
     $('#assignUnknown').click(function() {
-        console.log(data);
+        // console.log(data);
+        initFocus();
     });
 
     $('#defaultDisplay').click(function() {
