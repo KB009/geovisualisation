@@ -80,14 +80,15 @@ $(window).load(function () {
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
                             .on("drag", function() {
-                                // console.log(d);
 
-                                // rotate[0] = d3.event.x / 2;
-                                rotate[0] += d3.event.x;
-                                // translate[0] = 0;
+                                if (!blockTransform) {
+                                // rotate[0] += d3.event.x / 2;
+                                // console.log(d3.event.x)
+                                rotate[0] = d3.event.x;
+                                translate[0] = width/2;
+
+                                // translate[1] = height/2 + d3.event.y;
                                 translate[1] += d3.event.y;
-                                // svgHeight = document.getElementById("map_wrap").getBBox().height;
-                                // console.log("map_wrap " + svgHeight);
                                 if (translate[1] > height) {
                                     translate[1] = height;
                                 }
@@ -95,9 +96,6 @@ $(window).load(function () {
                                     translate[1] = 0;
                                 }
                                 
-                                console.log(translate[1]);
-                                // d.y += d3.event.dy; 
-                                // rotate[1] = d3.event.y;
                                 projection.rotate(rotate).translate(translate);
                                 path = d3.geo.path().projection(projection);
 
@@ -106,6 +104,8 @@ $(window).load(function () {
                                             // .delay(1000)
                                             // .duration(750)
                                             .attr("d", path);
+
+                                        }
 
                             });  
 
@@ -130,16 +130,17 @@ $(window).load(function () {
     var g = svg.append("g")
                             .attr("id", "map_wrap")
                             .style("stroke-width", "1px")
-
-    g.append("rect").attr("width", "100%")
-                    .attr("height", "100%")
-                    .attr("opacity", "0")
-                    .call(zoom)
+                            .call(zoom)
                     .on("mousedown.zoom", null)
                     .on("touchstart.zoom", null)
                     .on("touchmove.zoom", null)
                     .on("touchend.zoom", null)
                     .call(drag);
+
+    g.append("rect").attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("opacity", "0")
+                    
 
                       // .style("stroke-width", "2px").style("stroke", "black")
 
@@ -220,12 +221,12 @@ $(window).load(function () {
                         .attr("class", "country-boundary")
                         .on("click", clicked)
                         .on("contextmenu", rightclicked)
-                        .call(zoom)
-                        .on("mousedown.zoom", null)
-                        .on("touchstart.zoom", null)
-                        .on("touchmove.zoom", null)
-                        .on("touchend.zoom", null)
-                        .call(drag);
+                        // .call(zoom)
+                        // .on("mousedown.zoom", null)
+                        // .on("touchstart.zoom", null)
+                        // .on("touchmove.zoom", null)
+                        // .on("touchend.zoom", null)
+                        // .call(drag);
                         // .call(drag);
 
 
@@ -314,6 +315,7 @@ $(window).load(function () {
         zoom.scale(1);
         zoom.translate([0, 0]);
 
+
         g.transition()
             .duration(750)
             .style("stroke-width", "1.5px")
@@ -376,7 +378,7 @@ $(window).load(function () {
         // console.log(dx, dy, x, y);
 
 
-        scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
+        scale = 1 / Math.max(dx / width, dy / (height - menu_height)),
         translate = [width / 2 - scale * x, height / 2 - scale * y]
         // console.log(scale, translate);
 
@@ -384,7 +386,8 @@ $(window).load(function () {
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-        
+        zoom.scale(scale);
+        zoom.translate(translate);
     }
 
     function focusOnCountry(d) {
@@ -438,6 +441,8 @@ $(window).load(function () {
     function zoomed() {
         if (!blockTransform) {
             transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+            console.log(d3.select("#map_wrap").attr("transform"));
+            console.log(transform);
             g.attr("transform", transform);
         }
     };
