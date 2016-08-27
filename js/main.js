@@ -59,22 +59,7 @@ $(window).load(function () {
                         .innerRadius(function(d) { return Math.sqrt(d.y); })
                         .outerRadius(function(d) { return Math.sqrt(d.y + d.dy) - 2; });
 
-    // ---------- COLOR SCHEMES -------------
 
-    // color scheme for source ip's choroplet
-    var choropleth_source = d3.scale.quantize()
-                                .range(["rgb(199,233,192)", "rgb(161,217,155)",
-                                "rgb(116,196,118)", "rgb(49,163,84)","rgb(0,109,44)"]);
-
-    // color scheme for target ip's choroplet
-    var choropleth_target = d3.scale.quantize()
-                                .range(["rgb(252,187,161)", "rgb(252,146,114)", 
-                                    "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
-
-    // color scheme for sunburst
-    var color = d3.scale.category20c()
-                                .domain(100);
-    
     // ------------- BEHAVIOUR --------------
 
     var drag = d3.behavior.drag()
@@ -112,6 +97,13 @@ $(window).load(function () {
     var zoom = d3.behavior.zoom()
                             .scaleExtent([1, 10])
                             .on("zoom", zoomed);
+
+    // ------------- FLAGS --------------
+    var sunburstFlag = false,
+        focusFlag = false,
+        countryAttacksFlag = false;
+
+    var countryDetail;
 
     // ------------- SVG --------------
 
@@ -153,6 +145,33 @@ $(window).load(function () {
 
     var sunburst;
 
+    // ---------- COLOR SCHEMES -------------
+
+    // color scheme for source ip's choroplet
+    var choropleth_source = d3.scale.quantize()
+                                .range(["rgb(199,233,192)", "rgb(161,217,155)",
+                                "rgb(116,196,118)", "rgb(49,163,84)","rgb(0,109,44)"]);
+
+    // color scheme for target ip's choroplet
+    var choropleth_target = d3.scale.quantize()
+                                .range(["rgb(252,187,161)", "rgb(252,146,114)", 
+                                    "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
+
+    // color scheme for sunburst
+    var color = d3.scale.category20c()
+                                .domain(100);
+    
+    var defs = svg.append("defs")
+    var pattern = defs.append("pattern")
+            .attr({ id:"stripes", width:"6", height:"6", patternUnits:"userSpaceOnUse", patternTransform:"rotate(45)"})
+     
+     pattern.append("rect")
+            .attr({ id:"color_a", width:"3", height:"6", transform:"translate(0,0)", fill:"#88AAEE" })
+     pattern.append("rect")
+            .attr({ id: "color_b", width:"3", height:"6", transform:"translate(3,0)", fill:"#000000" })
+  
+
+    // -------------------------------------------------------------------------
 
     // Vsechny udalosti
     var events = d3.json("data/Events500.txt", function(error, events) {
@@ -268,34 +287,43 @@ $(window).load(function () {
     
 
     function clicked(d) {
-        // console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
-        console.log(d)
-        console.log(d.id);
-        // console.log(path.bounds(d));
+        
+        if (countryAttacksFlag && countryDetail == d.id) {
+            unfocus();
+            showChoroplet();
+            countryAttacksFlag = false;
+            countryDetail = "";
+            return;
+        }
+        
         removeSunburst();
         if (active.node() === this) return unfocus();
+        unfocus();
 
         active.classed("active", false);
+        
+        var activePath = d3.select("#" + d.id);
+        if (!activePath.classed("victim") && !activePath.classed("attacker")) {     // or
+            return;
+        } 
         active = d3.select(this).classed("active", true);
 
-        // --------------------------------------------------
         var res = $.grep(data, function(e) { return e.country == d.id});
         countryOfInterest = res[0];
+        countryDetail = d.id;
+        // --------------------------------------------------
 
         var participants = [];
         if (GeoMenu.getDisplayIP() == "source") {
-            console.log("source");
             countryOfInterest.targets.countries.forEach(function(e) {
                 participants.push(e.code);
             })
         } else {
-            console.log("target");
 
             countryOfInterest.sources.countries.forEach(function(e) {
                 participants.push(e.code);
             })
         }
-        console.log(participants);
 
 
         // --------------------------------------------------- Vytvor na to jednu funkci
@@ -313,7 +341,6 @@ $(window).load(function () {
                                         .style("fill", function(e) {
                                             result = $.grep(data, function(a) { return a.country == e.id; })
                                             if (result.length > 0) {
-                                                    console.log(result[0])
                                                     return choropleth_target(result[0].was_attacked);
                                             }
                                         })
@@ -327,29 +354,34 @@ $(window).load(function () {
                                     .style("fill", "#ccc");
         
                 participants.forEach(function(e) {
-                selected = d3.select("#" + e)
+                    selected = d3.select("#" + e)
                                         .filter(function(e) { return e.id != d.id; })
                                         .classed("involved_attacker", true)
                                         .style("fill", function(e) {
                                             result = $.grep(data, function(a) { return a.country == e.id; })
                                             if (result.length > 0) {
-                                                    console.log(result[0])
                                                     return choropleth_source(result[0].attacked_sb);
                                             }
                                         })
-
             })
-    
-
         }
 
+        if (($.grep(participants, function(e) { return e == d.id })).length > 0) {
 
-        // 1 zobraz obeti
+            d3.select("#color_a").attr("fill", function(a) {
+                result = $.grep(data, function(a) { return a.country == d.id; })
+                return choropleth_source(countryOfInterest.attacked_sb);
+            })
 
-        // 2 utoci stat sam na sebe? 
-        
-        
-        // focusOnCountry(d);
+            d3.select("#color_b").attr("fill", function(a) {
+                result = $.grep(data, function(a) { return a.country == d.id; })
+                return choropleth_target(countryOfInterest.was_attacked);
+            })
+
+            active.style("fill", "url(#stripes)");
+        }
+
+        countryAttacksFlag = true;
     }
     
     function rightclicked(d) {
@@ -380,6 +412,11 @@ $(window).load(function () {
 
     function displayTheWorld() {
         blockTransform = false;
+        if (countryAttacksFlag) {
+            showChoroplet();
+            countryAttacksFlag = false;
+            countryDetail = "";
+        }
 
         active.classed("active", false);
         active = d3.select(null);
@@ -772,16 +809,8 @@ $(window).load(function () {
     // --------------------------------------------------------------------------------
     
 
-    ///////////////////////////////////////////////////////////////////
-    // --------- Event listeners + button functionality --------- // //
-    ///////////////////////////////////////////////////////////////////
-
-    $("#geo-menu").on('geomenuUpdate', function(e) {
-        switch(e.detail) {
-            case 'displayIP':
-
-                // d3.selectAll(".displayed").classed("displayed", false);
-                d3.selectAll(".attacker").classed("attacker", false);
+    function showChoroplet() {
+        d3.selectAll(".attacker").classed("attacker", false);
                 d3.selectAll(".victim").classed("victim", false);
 
                 g.selectAll("path")
@@ -789,7 +818,7 @@ $(window).load(function () {
 
                             var result;
                             if (GeoMenu.getDisplayIP() == "source") {
-                                result = $.grep(data, function(e) { return e.country == d.id; })
+                                result = $.grep(data, function(a) { return a.country == d.id; })
                                 if (result.length > 0) {
                                     if (result[0].attacked_sb != 0) { 
 
@@ -800,7 +829,7 @@ $(window).load(function () {
                                     }
                                 }
                             } else {
-                                result = $.grep(data, function(e){ return e.country == d.id; });
+                                result = $.grep(data, function(a){ return a.country == d.id; });
                                 if (result.length > 0) {
                                     if (result[0].was_attacked != 0) {
 
@@ -812,6 +841,18 @@ $(window).load(function () {
                                 }
                             }
                         })
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    // --------- Event listeners + button functionality --------- // //
+    ///////////////////////////////////////////////////////////////////
+
+    $("#geo-menu").on('geomenuUpdate', function(e) {
+        switch(e.detail) {
+            case 'displayIP':
+
+                showChoroplet();
+                
                 break;
 
             case 'showNames':

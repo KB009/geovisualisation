@@ -38,7 +38,7 @@ path.active {
 }
 
 path.attacker:hover {
-  fill: rgb(0, 85, 33) !important;
+  /*fill: rgb(0, 85, 33) !important;*/
   /*transparency: 1.0 !important;*/
 }
 
