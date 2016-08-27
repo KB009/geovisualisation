@@ -163,11 +163,10 @@ $(window).load(function () {
     
     var defs = svg.append("defs")
     var pattern = defs.append("pattern")
-            .attr({ id:"stripes", width:"6", height:"6", patternUnits:"userSpaceOnUse", patternTransform:"rotate(45)"})
-     
-     pattern.append("rect")
+            .attr({ id:"stripes", width:"6", height:"6", patternUnits:"userSpaceOnUse", patternTransform:"rotate(45)"}) 
+    pattern.append("rect")
             .attr({ id:"color_a", width:"3", height:"6", transform:"translate(0,0)", fill:"#88AAEE" })
-     pattern.append("rect")
+    pattern.append("rect")
             .attr({ id: "color_b", width:"3", height:"6", transform:"translate(3,0)", fill:"#000000" })
   
 
@@ -334,14 +333,21 @@ $(window).load(function () {
                                     .classed("attacker", false)
                                     .style("fill", "#ccc");
     
-            participants.forEach(function(e) {
+            participants.forEach(function(e) {  // target countries
                 selected = d3.select("#" + e)
                                         .filter(function(e) { return e.id != d.id; })
                                         .classed("involved_victims", true)
                                         .style("fill", function(e) {
                                             result = $.grep(data, function(a) { return a.country == e.id; })
+
                                             if (result.length > 0) {
-                                                    return choropleth_target(result[0].was_attacked);
+                                                res = $.grep(result[0].sources.countries, function(a) { return a.code == d.id; });
+                                                if (res.length > 0) {
+                                                    return choropleth_target(res[0].count);
+                                                    
+                                                } else {
+                                                    console.log(e.id)
+                                                }
                                             }
                                         })
 
@@ -353,14 +359,22 @@ $(window).load(function () {
                                     .classed("victim", false)
                                     .style("fill", "#ccc");
         
-                participants.forEach(function(e) {
+                participants.forEach(function(e) {  // source countries
                     selected = d3.select("#" + e)
                                         .filter(function(e) { return e.id != d.id; })
                                         .classed("involved_attacker", true)
                                         .style("fill", function(e) {
                                             result = $.grep(data, function(a) { return a.country == e.id; })
+
                                             if (result.length > 0) {
-                                                    return choropleth_source(result[0].attacked_sb);
+                                                res = $.grep(result[0].targets.countries, function(a) { return a.code == d.id; });
+                                                if (res.length > 0) {
+                                                    return choropleth_source(res[0].count);
+                                                    
+                                                } else {
+                                                    console.log(e.id)
+                                                }
+                                                return choropleth_source(result[0].attacked_sb);
                                             }
                                         })
             })
@@ -947,6 +961,7 @@ $(window).load(function () {
                 curr_target_ip.count++;
                 curr_source_data.attacked_sb++;
                 curr_source_type.count++;
+                curr_attacked_state.count++;
 
 
                 // ----------- NEW ENTRY FOR THE TARGET STATE -------------
@@ -993,6 +1008,8 @@ $(window).load(function () {
                 curr_source_ip.count++;
                 curr_target_data.was_attacked++;
                 curr_target_type.count++;
+                curr_attacking_state.count++;
+
  
             }
         }
@@ -1017,6 +1034,7 @@ $(window).load(function () {
     function createInvolvedCountry(state_code) {
         var new_involved_country = {
             code         : state_code,
+            count        : 0,
             attack_types : []
         }
         return new_involved_country;
