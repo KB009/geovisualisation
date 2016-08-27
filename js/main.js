@@ -107,6 +107,13 @@ $(window).load(function () {
 
     // ------------- SVG --------------
 
+    d3.select("body").on("keydown", function() {
+                                    if (d3.event.keyCode == 27) { // Esc
+                                        removeSunburst();
+                                        unfocus();
+                                    }
+                                })
+
     svg = d3.select("body").append("svg")
                                 .attr("id", "svg")
                             // .attr("width", width)
@@ -285,6 +292,7 @@ $(window).load(function () {
     /////////////////////////////////////////////////////////////////////////
     
     function showInvolvedCountries(_displayIP, _classSelector, _participants) {
+        d3.selectAll(".involved").classed("involved", false);
         d3.selectAll(_classSelector)
                             .filter(function(e) { return e.id != countryDetail; })
                             .classed("attacker", false)
@@ -295,7 +303,7 @@ $(window).load(function () {
         _participants.forEach(function(e) {  
             selected = d3.select("#" + e)
                 .filter(function(e) { return e.id != countryDetail; })
-                // .classed("involved_victims", true)
+                .classed("involved", true)
                 .style("fill", function(e) {
                     result = $.grep(data, function(a) { return a.country == e.id; })
 
@@ -332,9 +340,14 @@ $(window).load(function () {
         // pokud se jiz zobrazuji obeti/utocnici statu d, ukonci nahled
         if (countryAttacksFlag && countryDetail == d.id) {
             unfocus();
+            removeSunburst();
             showChoroplet();
             countryAttacksFlag = false;
             countryDetail = "";
+            d3.selectAll(".involved").classed("involved", false);
+            
+            removeCurves();
+
             return;
         }
         
@@ -356,7 +369,6 @@ $(window).load(function () {
 
         countryDetail = d.id;
         active = d3.select(this).classed("active", true);
-        // --------------------------------------------------
 
         var participants = [];
         if (GeoMenu.getDisplayIP() == "source") {
@@ -366,6 +378,61 @@ $(window).load(function () {
             countryOfInterest.sources.countries.forEach(function(e) { participants.push(e.code); })
             showInvolvedCountries("target", ".victim", participants);
         }
+
+        showArcs(d);
+    }
+
+    function prepareArcData(d) {
+
+        var lineData = [];
+
+        var x1 = path.centroid(d)[0];
+        var y1 = path.centroid(d)[1];
+
+        d3.selectAll(".involved")
+                            .each(function(d) {
+                                var x3 = path.centroid(d)[0];
+                                var y3 = path.centroid(d)[1];
+
+                                var x2 = (x1 + x3) / 2;
+                                var y2 = (y1 + y3) / 2 - 60;
+
+                                var newLine = [];
+                                newLine.push({ x: x1, y: y1 });
+                                newLine.push({ x: x2, y: y2 });
+                                newLine.push({ x: x3, y: y3 });
+
+                                lineData.push(newLine);
+
+                            })
+
+        return lineData;
+    }   
+
+
+    function showArcs(d) {
+
+        lineData = prepareArcData(d);
+        
+        var lineFunction = d3.line()
+                              .curve(d3.curveBasis)
+                              .x(function(d) { return (d.x); })
+                              .y(function(d) { return (d.y); })
+
+        lineData.forEach(function(e) {
+            curves.append("path")
+                            .attr("d", lineFunction(e))
+                            .style("stroke", "#666666")
+                            .style("stroke-width", "1.5px")
+                            .style("fill", "none")
+                            .attr("class", "curve")
+                    // .attr("transform", "translate(" + 150 + ", " + 300 + ")");
+        })
+
+    }
+
+    function removeCurves() {
+        d3.selectAll(".curve").remove();
     }
     
     function rightclicked(d) {
@@ -380,7 +447,8 @@ $(window).load(function () {
             return;
         }
         removeSunburst();
-        
+        removeCurves();
+
         active.classed("active", false);
         active = d3.select(this).classed("active", true);
         
@@ -400,6 +468,10 @@ $(window).load(function () {
             showChoroplet();
             countryAttacksFlag = false;
             countryDetail = "";
+            d3.selectAll(".involved").classed("involved", false);
+            
+            removeCurves();
+
         }
 
         active.classed("active", false);
@@ -528,6 +600,7 @@ $(window).load(function () {
             .duration(750)
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
+
     };
 
     
@@ -535,9 +608,10 @@ $(window).load(function () {
     function zoomed() {
         if (!blockTransform) {
             transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
-            // console.log(d3.select("#map_wrap").attr("transform"));
-            // console.log(transform);
             g.attr("transform", transform);
+
+            d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
+            curves.attr("transform", transform)
         }
     };
 
@@ -795,7 +869,8 @@ $(window).load(function () {
 
     function showChoroplet() {
         d3.selectAll(".attacker").classed("attacker", false);
-                d3.selectAll(".victim").classed("victim", false);
+        d3.selectAll(".victim").classed("victim", false);  
+        removeCurves();
 
                 g.selectAll("path")
                         .style("fill", function(d) {
@@ -860,7 +935,8 @@ $(window).load(function () {
 
     $('#assignUnknown').click(function() {
         // console.log(data);
-        initFocus();
+        // initFocus();
+        showArcs();
     });
 
     $('#defaultDisplay').click(function() {
