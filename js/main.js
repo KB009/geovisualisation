@@ -284,9 +284,52 @@ $(window).load(function () {
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
     
+    function showInvolvedCountries(_displayIP, _classSelector, _participants) {
+        d3.selectAll(_classSelector)
+                            .filter(function(e) { return e.id != countryDetail; })
+                            .classed("attacker", false)
+                            .classed("victim", false)
+                            .style("fill", "#ccc");
+
+        // Draw CHOROPLETH of attackers/victims of countryDetail
+        _participants.forEach(function(e) {  
+            selected = d3.select("#" + e)
+                .filter(function(e) { return e.id != countryDetail; })
+                // .classed("involved_victims", true)
+                .style("fill", function(e) {
+                    result = $.grep(data, function(a) { return a.country == e.id; })
+
+                    if (result.length > 0) {
+                        if (_displayIP == "source") {
+                            res = $.grep(result[0].sources.countries, function(a) { return a.code == countryDetail; });
+                            if (res.length > 0) { return choropleth_target(res[0].count); }
+                        } else {
+                            res = $.grep(result[0].targets.countries, function(a) { return a.code == countryDetail; });
+                            if (res.length > 0) { return choropleth_source(res[0].count); }
+                        }
+                    }
+                })
+            })
+
+        // If countryOfInterest attacks on itself, draw it striped
+        if (($.grep(_participants, function(e) { return e == countryDetail })).length > 0) {
+            countryOfInterest = ( $.grep(data, function(e) { return e.country == countryDetail}) )[0];
+
+            d3.select("#color_a").attr("fill", function() {
+                return choropleth_source(countryOfInterest.attacked_sb);
+            })
+            d3.select("#color_b").attr("fill", function() {
+                return choropleth_target(countryOfInterest.was_attacked);
+            })
+            active.style("fill", "url(#stripes)");
+        }
+
+        countryAttacksFlag = true;
+    }
 
     function clicked(d) {
         
+        // pokud se jiz zobrazuji obeti/utocnici statu d, ukonci nahled
         if (countryAttacksFlag && countryDetail == d.id) {
             unfocus();
             showChoroplet();
@@ -296,106 +339,33 @@ $(window).load(function () {
         }
         
         removeSunburst();
+        // pokud se zobrazoval sunburst statu d, ukonci nahled i funkci 
         if (active.node() === this) return unfocus();
+
         unfocus();
 
         active.classed("active", false);
         
-        var activePath = d3.select("#" + d.id);
-        if (!activePath.classed("victim") && !activePath.classed("attacker")) {     // or
+        // pokud se stat d nepodili na zadne udalosti, neni zobrazovat jaka data > ukonci funkci
+        if (!d3.select(this).classed("victim") && !d3.select(this).classed("attacker")) {     // or
             return;
         } 
-        active = d3.select(this).classed("active", true);
 
-        var res = $.grep(data, function(e) { return e.country == d.id});
-        countryOfInterest = res[0];
+        // zobraz utocniky/obeti daneho statu a nastav stat na aktivni
+        var countryOfInterest = ( $.grep(data, function(e) { return e.country == d.id}) )[0];
+
         countryDetail = d.id;
+        active = d3.select(this).classed("active", true);
         // --------------------------------------------------
 
         var participants = [];
         if (GeoMenu.getDisplayIP() == "source") {
-            countryOfInterest.targets.countries.forEach(function(e) {
-                participants.push(e.code);
-            })
+            countryOfInterest.targets.countries.forEach(function(e) { participants.push(e.code); })
+            showInvolvedCountries("source", ".attacker", participants);
         } else {
-
-            countryOfInterest.sources.countries.forEach(function(e) {
-                participants.push(e.code);
-            })
+            countryOfInterest.sources.countries.forEach(function(e) { participants.push(e.code); })
+            showInvolvedCountries("target", ".victim", participants);
         }
-
-
-        // --------------------------------------------------- Vytvor na to jednu funkci
-        
-        if (GeoMenu.getDisplayIP() == "source") {
-            d3.selectAll(".attacker")
-                                    .filter(function(e) { return e.id != d.id; })
-                                    .classed("attacker", false)
-                                    .style("fill", "#ccc");
-    
-            participants.forEach(function(e) {  // target countries
-                selected = d3.select("#" + e)
-                                        .filter(function(e) { return e.id != d.id; })
-                                        .classed("involved_victims", true)
-                                        .style("fill", function(e) {
-                                            result = $.grep(data, function(a) { return a.country == e.id; })
-
-                                            if (result.length > 0) {
-                                                res = $.grep(result[0].sources.countries, function(a) { return a.code == d.id; });
-                                                if (res.length > 0) {
-                                                    return choropleth_target(res[0].count);
-                                                    
-                                                } else {
-                                                    console.log(e.id)
-                                                }
-                                            }
-                                        })
-
-            })
-    
-        } else {
-            d3.selectAll(".victim")
-                                    .filter(function(e) { return e.id != d.id; })
-                                    .classed("victim", false)
-                                    .style("fill", "#ccc");
-        
-                participants.forEach(function(e) {  // source countries
-                    selected = d3.select("#" + e)
-                                        .filter(function(e) { return e.id != d.id; })
-                                        .classed("involved_attacker", true)
-                                        .style("fill", function(e) {
-                                            result = $.grep(data, function(a) { return a.country == e.id; })
-
-                                            if (result.length > 0) {
-                                                res = $.grep(result[0].targets.countries, function(a) { return a.code == d.id; });
-                                                if (res.length > 0) {
-                                                    return choropleth_source(res[0].count);
-                                                    
-                                                } else {
-                                                    console.log(e.id)
-                                                }
-                                                return choropleth_source(result[0].attacked_sb);
-                                            }
-                                        })
-            })
-        }
-
-        if (($.grep(participants, function(e) { return e == d.id })).length > 0) {
-
-            d3.select("#color_a").attr("fill", function(a) {
-                result = $.grep(data, function(a) { return a.country == d.id; })
-                return choropleth_source(countryOfInterest.attacked_sb);
-            })
-
-            d3.select("#color_b").attr("fill", function(a) {
-                result = $.grep(data, function(a) { return a.country == d.id; })
-                return choropleth_target(countryOfInterest.was_attacked);
-            })
-
-            active.style("fill", "url(#stripes)");
-        }
-
-        countryAttacksFlag = true;
     }
     
     function rightclicked(d) {
