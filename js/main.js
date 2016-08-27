@@ -213,11 +213,13 @@ $(window).load(function () {
                         .style("fill", function(d) {
                             var result = $.grep(data, function(e){ return e.country == d.id; });
                             if (result.length > 0) {
-                                if (result[0].attacked_sb != 0) { 
+                                if (result[0].attacked_sb != 0) {
+                                    d3.select(this).classed("attacker", true);
                                     return choropleth_source(result[0].attacked_sb);
                                 }
                             }
                         })
+                        // .style("fill-opacity", 0.8)
                         .attr("class", "country-boundary")
                         .on("click", clicked)
                         .on("contextmenu", rightclicked)
@@ -267,16 +269,87 @@ $(window).load(function () {
 
     function clicked(d) {
         // console.log(($.grep(data, function(e) { return e.country == d.id; }))[0] );
-        // console.log(data)
+        console.log(d)
         console.log(d.id);
-        console.log(path.bounds(d));
+        // console.log(path.bounds(d));
         removeSunburst();
         if (active.node() === this) return unfocus();
 
         active.classed("active", false);
         active = d3.select(this).classed("active", true);
 
-        focusOnCountry(d);
+        // --------------------------------------------------
+        var res = $.grep(data, function(e) { return e.country == d.id});
+        countryOfInterest = res[0];
+
+        var participants = [];
+        if (GeoMenu.getDisplayIP() == "source") {
+            console.log("source");
+            countryOfInterest.targets.countries.forEach(function(e) {
+                participants.push(e.code);
+            })
+        } else {
+            console.log("target");
+
+            countryOfInterest.sources.countries.forEach(function(e) {
+                participants.push(e.code);
+            })
+        }
+        console.log(participants);
+
+
+        // --------------------------------------------------- Vytvor na to jednu funkci
+        
+        if (GeoMenu.getDisplayIP() == "source") {
+            d3.selectAll(".attacker")
+                                    .filter(function(e) { return e.id != d.id; })
+                                    .classed("attacker", false)
+                                    .style("fill", "#ccc");
+    
+            participants.forEach(function(e) {
+                selected = d3.select("#" + e)
+                                        .filter(function(e) { return e.id != d.id; })
+                                        .classed("involved_victims", true)
+                                        .style("fill", function(e) {
+                                            result = $.grep(data, function(a) { return a.country == e.id; })
+                                            if (result.length > 0) {
+                                                    console.log(result[0])
+                                                    return choropleth_target(result[0].was_attacked);
+                                            }
+                                        })
+
+            })
+    
+        } else {
+            d3.selectAll(".victim")
+                                    .filter(function(e) { return e.id != d.id; })
+                                    .classed("victim", false)
+                                    .style("fill", "#ccc");
+        
+                participants.forEach(function(e) {
+                selected = d3.select("#" + e)
+                                        .filter(function(e) { return e.id != d.id; })
+                                        .classed("involved_attacker", true)
+                                        .style("fill", function(e) {
+                                            result = $.grep(data, function(a) { return a.country == e.id; })
+                                            if (result.length > 0) {
+                                                    console.log(result[0])
+                                                    return choropleth_source(result[0].attacked_sb);
+                                            }
+                                        })
+
+            })
+    
+
+        }
+
+
+        // 1 zobraz obeti
+
+        // 2 utoci stat sam na sebe? 
+        
+        
+        // focusOnCountry(d);
     }
     
     function rightclicked(d) {
@@ -441,8 +514,8 @@ $(window).load(function () {
     function zoomed() {
         if (!blockTransform) {
             transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
-            console.log(d3.select("#map_wrap").attr("transform"));
-            console.log(transform);
+            // console.log(d3.select("#map_wrap").attr("transform"));
+            // console.log(transform);
             g.attr("transform", transform);
         }
     };
@@ -504,6 +577,13 @@ $(window).load(function () {
                                 .style("opacity", 1);
 
         d3.selectAll(".caption").style("visibility", "");
+
+        // Expand the small segments ? 
+        // console.log(d.dx, d.dy);
+        // if (d.dx < 0.05) {
+        //     console.log("dx")
+        //     d.dx = 0.05;
+        // }
     }
 
     function sunburstMouseleave(d) {
@@ -700,14 +780,22 @@ $(window).load(function () {
         switch(e.detail) {
             case 'displayIP':
 
+                // d3.selectAll(".displayed").classed("displayed", false);
+                d3.selectAll(".attacker").classed("attacker", false);
+                d3.selectAll(".victim").classed("victim", false);
+
                 g.selectAll("path")
                         .style("fill", function(d) {
-                            var result;
 
+                            var result;
                             if (GeoMenu.getDisplayIP() == "source") {
                                 result = $.grep(data, function(e) { return e.country == d.id; })
                                 if (result.length > 0) {
                                     if (result[0].attacked_sb != 0) { 
+
+                                        d3.select(this).classed("attacker", true)
+                                                       // .classed("displayed", true);
+
                                         return choropleth_source(result[0].attacked_sb);
                                     }
                                 }
@@ -715,6 +803,10 @@ $(window).load(function () {
                                 result = $.grep(data, function(e){ return e.country == d.id; });
                                 if (result.length > 0) {
                                     if (result[0].was_attacked != 0) {
+
+                                        d3.select(this).classed("victim", true)
+                                                       // .classed("displayed", true);
+                                        
                                         return choropleth_target(result[0].was_attacked);
                                     }
                                 }

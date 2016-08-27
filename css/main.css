@@ -28,13 +28,26 @@ path {
 
 path:hover {
   /*fill: #E9CB60;*/
-  fill: gray;
+  fill: gray !important;
   /*stroke: black;
   stroke-width: 2px;*/
 }
 
 path.active {
   fill: gray;
+}
+
+path.attacker:hover {
+  fill: rgb(0, 85, 33) !important;
+  /*transparency: 1.0 !important;*/
+}
+
+path.victim {
+  /*fill: black !important;*/
+}
+
+path.victim path.attacker {
+  /*fill: black !important;*/
 }
 
 /**
