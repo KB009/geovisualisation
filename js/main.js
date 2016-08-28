@@ -22,6 +22,7 @@ $(window).load(function () {
         // active_d = d3.select(null);
 
     var data = [];
+    var attackTypes = [];
     var countryNames;
 
     var svg;
@@ -957,6 +958,10 @@ $(window).load(function () {
             var source_state = events[i].source.country;
             var type = events[i].type;
 
+            if ( ($.grep(attackTypes, function(e) { return e == type})).length == 0) {
+                attackTypes.push(type);
+            }
+
             // Get global data of source state
             var r = $.grep(data, function(e){ return e.country == source_state; });
 
@@ -1060,6 +1065,7 @@ $(window).load(function () {
             }
         }
         console.log(data);
+        console.log(attackTypes);
     }
 
     function createCountryOverviewData(state_code) {
