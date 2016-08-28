@@ -440,8 +440,15 @@ $(window).load(function () {
         d3.event.preventDefault();
 
         // in case there is no data for clicked country, return
-        if (($.grep(data, function(e) { return e.country == d.id; })).length == 0) return;
-
+        var res = $.grep(data, function(e) { return e.country == d.id; }); 
+        if (res.length == 0) { return; }
+        else {
+            if ( (GeoMenu.getDisplayIP() == "source" && res[0].attacked_sb == 0) ||
+                (GeoMenu.getDisplayIP() == "target" && res[0].was_attacked == 0) ) {
+                return;
+            }
+        }
+        
         if (active.node() === this && d3.selectAll("#sunburst")[0].length == 1) {
             removeSunburst();
             unfocus();
