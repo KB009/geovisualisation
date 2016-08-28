@@ -111,6 +111,8 @@ $(window).load(function () {
     d3.select("body").on("keydown", function() {
                                     if (d3.event.keyCode == 27) { // Esc
                                         removeSunburst();
+                                        // removeCurves();
+                                        showChoroplet();
                                         unfocus();
                                     }
                                 })
@@ -434,6 +436,8 @@ $(window).load(function () {
 
     function removeCurves() {
         d3.selectAll(".curve").remove();
+        active.classed("active", false);
+        countryDetail = "";
     }
     
     function rightclicked(d) {
@@ -448,7 +452,7 @@ $(window).load(function () {
                 return;
             }
         }
-        
+
         if (active.node() === this && d3.selectAll("#sunburst")[0].length == 1) {
             removeSunburst();
             unfocus();
