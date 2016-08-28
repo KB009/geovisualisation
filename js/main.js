@@ -85,6 +85,8 @@ $(window).load(function () {
                                 projection.rotate(rotate).translate(translate);
                                 path = d3.geo.path().projection(projection);
 
+
+
                                 d3.selectAll("path")
                                             // .transition()
                                             // .delay(1000)
@@ -489,18 +491,20 @@ $(window).load(function () {
         active.classed("active", false);
         active = d3.select(null);
         
+        translate = [width/2, height/2];
+        projection.translate(translate);
+                                path = d3.geo.path().projection(projection)
+                                d3.selectAll("path")//.transition(500)
+                                                    .attr("d", path);
         transform = "";
-        zoom.scale(1);
-        zoom.translate([0, 0]);
-
-
         g.transition()
             .duration(750)
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
+        zoom.scale(1);
+        zoom.translate([0, 0]);
 
         removeSunburst();
-        // d3.selectAll("#sunburst").remove();
     }
 
     function initFocus() {
