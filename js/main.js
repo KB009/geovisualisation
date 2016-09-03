@@ -1,12 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-// Zkontroluj jestli neprepisuji event_id
-
-
 /* global d3 */
 
 $(window).load(function () {
@@ -28,15 +19,18 @@ $(window).load(function () {
     var svg;
 
     // ---------- MAP -------------
-
     var projection = d3.geo.mercator()
                             .scale(width/7)
                             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path().projection(projection);
 
+    var lineFunction = d3.line()
+                      .curve(d3.curveBasis)
+                      .x(function(d) { return (d.x); })
+                      .y(function(d) { return (d.y); });
+
     // ---------- SUNBURST -------------
-    
     var formatNumber = d3.format(",d");
 
     var x = d3.scale.linear()
@@ -101,6 +95,15 @@ $(window).load(function () {
                             .scaleExtent([1, 10])
                             .on("zoom", zoomed);
 
+    // on ESC, cancel the view 
+    d3.select("body").on("keydown", function() {
+                                    if (d3.event.keyCode == 27) { // Esc
+                                        removeSunburst();
+                                        showChoropleth();
+                                        unfocus();
+                                    }
+                                })
+
     // ------------- FLAGS --------------
     var sunburstFlag = false,
         focusFlag = false,
@@ -109,53 +112,27 @@ $(window).load(function () {
     var countryDetail;
 
     // ------------- SVG --------------
-
-    d3.select("body").on("keydown", function() {
-                                    if (d3.event.keyCode == 27) { // Esc
-                                        removeSunburst();
-                                        // removeCurves();
-                                        showChoropleth();
-                                        unfocus();
-                                    }
-                                })
-
     svg = d3.select("body").append("svg")
                                 .attr("id", "svg")
                             // .attr("width", width)
                             // .attr("height", height)
                             // .attr("preserveAspectRatio", "xMinYMin meet")
-                            .attr("viewBox", "0 0 " + width + " " + height)
                             // .classed("svg-content-responsive", true)
-                            //.on("click", reset)
-                            // .call(drag)
-                            // .call(zoom);
-                            // 
+                            .attr("viewBox", "0 0 " + width + " " + height);
 
     var g = svg.append("g")
-                            .attr("id", "map_wrap")
-                            .style("stroke-width", "1px")
-                            .call(zoom)
-                    .on("mousedown.zoom", null)
-                    .on("touchstart.zoom", null)
-                    .on("touchmove.zoom", null)
-                    .on("touchend.zoom", null)
-                    .call(drag);
+                        .attr("id", "map_wrap")
+                        .style("stroke-width", "1px")
+                        .call(drag)
+                        .call(zoom)
+                        .on({ "mousedown.zoom" : null, "touchstart.zoom": null,
+                            "touchmove.zoom" : null, "touchend.zoom"  : null });
 
-    g.append("rect").attr("width", "100%")
-                    .attr("height", "100%")
-                    .attr("opacity", "0")
-                    
+    g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
 
-                      // .style("stroke-width", "2px").style("stroke", "black")
+    var lan = svg.append("g").attr({ "id" : "lanBubble" });
 
-
-    var lan = svg.append("g")
-                    .attr({
-                        "id" : "lanBubble"
-                    })
-
-    var curves = svg.append("g")
-                            .attr("class", "curves");
+    var curves = svg.append("g").attr("class", "curves");
                             
     var sunburst_wrap = svg.append("g")                    
                             .attr("id", "sunburst_wrap")
@@ -163,7 +140,7 @@ $(window).load(function () {
 
     var sunburst;
 
-    // ---------- COLOR SCHEMES -------------
+    // ---------- COLOR SCHEMES + PATTERN -------------
 
     // color scheme for source ip's choroplet
     var choropleth_source = d3.scale.quantize()
@@ -176,9 +153,9 @@ $(window).load(function () {
                                     "rgb(251,106,74)", "rgb(222,45,38)", "rgb(165,15,21)"]);
 
     // color scheme for sunburst
-    var color = d3.scale.category20c()
-                                .domain(100);
+    var color = d3.scale.category20c().domain(100);
     
+    // striped pattern 
     var defs = svg.append("defs")
     var pattern = defs.append("pattern")
             .attr({ id:"stripes", width:"6", height:"6", patternUnits:"userSpaceOnUse", patternTransform:"rotate(45)"}) 
@@ -187,9 +164,7 @@ $(window).load(function () {
     pattern.append("rect")
             .attr({ id: "color_b", width:"3", height:"6", transform:"translate(3,0)", fill:"#000000" })
   
-
     // ---------- LEGEND -------------
-
     var legend = svg.append("g")
                             .attr("id", "legend");
     legend.selectAll("rect")
@@ -208,6 +183,7 @@ $(window).load(function () {
                             "stroke" : "white"
 
                         })
+
     var legendMin = legend.append("text")
                         .attr({
                             "x" : function(d) { return width - (220); },
@@ -233,53 +209,12 @@ $(window).load(function () {
                             "font-family" : "sans-serif"
                         });
 
-    function updateLegend() {
-        legend.selectAll("rect")
-            .style("fill", function(d) {
-                if (GeoMenu.getDisplayIP() == "source") {
-                    return choropleth_source.range()[d];
-                } else {
-                    return choropleth_target.range()[d];
-                }    
-            })
-
-        legendMin.text(function() {
-            if (GeoMenu.getDisplayIP() == "source") {
-                    return choropleth_source.domain()[0];
-                } else {
-                    return choropleth_target.domain()[0];
-                }
-            })
-    
-        legendMax.text(function() {
-            if (GeoMenu.getDisplayIP() == "source") {
-                    return choropleth_source.domain()[1];
-                } else {
-                    return choropleth_target.domain()[1];
-                }
-            })
-    }
-
     // -------------------------------------------------------------------------
 
     function initGeoMenu() {
         GeoMenu.setDisplayIP("source");
         GeoMenu.setDisplayCountryNames(false);
         GeoMenu.setShowAttacks(["INSTMSG", "COUNTRY"]);
-    }
-
-    function updateChoroplethDomains() {
-        choropleth_source.domain([
-                            d3.min(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MAX_VALUE : d.attacked_sb_filter; }),
-                            d3.max(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MIN_VALUE : d.attacked_sb_filter; }),
-                            // d3.max(data, function(d) { return d.attacked_sb_filter; })
-            ]);
-
-        choropleth_target.domain([
-                            d3.min(data, function(d) { return d.was_attacked_filter == 0 ? Number.MAX_VALUE : d.was_attacked_filter; }),
-                            d3.max(data, function(d) { return d.was_attacked_filter == 0 ? Number.MIN_VALUE : d.was_attacked_filter; })
-            ]);
-        
     }
 
     // Vsechny udalosti
@@ -295,30 +230,13 @@ $(window).load(function () {
     function getCountryNames(callback) {
         countryNames = d3.json("data/countries.json", function(error, json) {
             if (error) return console.error(error);
-            // console.log("INSIDE");
-            // console.log(json["A1"]);
-
             callback(json);
-
-        // ``  console.log("H " +  json['A1']);
             return json;
-
         });
     }
 
     d3.json("data/world-50m-id.json", function(error, json) {
         if (error) return console.error(error);
-
-        // countryNames = d3.json("data/countries.json", function(error, json) {
-        //     if (error) return console.error(error);
-        //     console.log("INSIDE");
-        //     console.log(json);
-
-        // // ``  console.log("H " +  json['A1']);
-        //     return json;
-
-        // });
-
 
         getCountryNames(function(names) {
 
@@ -339,18 +257,11 @@ $(window).load(function () {
                                 }
                             }
                         })
-                        // .style("fill-opacity", 0.8)
                         .attr("class", "country-boundary")
                         .on("click", clicked)
                         .on("contextmenu", rightclicked)
-                        // .call(zoom)
-                        // .on("mousedown.zoom", null)
-                        // .on("touchstart.zoom", null)
-                        // .on("touchmove.zoom", null)
-                        // .on("touchend.zoom", null)
-                        // .call(drag);
-                        // .call(drag);
 
+/*      // LAN BUBBLE
             var lanRadius = 70;
             lan.append("circle")
                         // .attr("id", "LAN")
@@ -380,7 +291,7 @@ $(window).load(function () {
                         .on("mouserover", function() {
                             // d3.event.preventDefault();
                         })
-
+*/
 
             g.selectAll("text")
                             .data(topojson.feature(json, json.objects.countries).features)
@@ -403,62 +314,15 @@ $(window).load(function () {
             // initFocus();
         })
 
-
-        // zoomOn
-
     });
 
     
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
-    //                    User Interactivity Functions                     //
+    //                 User + Map Interactivity Functions                  //
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
     
-    function showInvolvedCountries(_displayIP, _classSelector, _participants) {
-        d3.selectAll(".involved").classed("involved", false);
-        d3.selectAll(_classSelector)
-                            .filter(function(e) { return e.id != countryDetail; })
-                            .classed("attacker", false)
-                            .classed("victim", false)
-                            .style("fill", "#ccc");
-
-        // Draw CHOROPLETH of attackers/victims of countryDetail
-        _participants.forEach(function(e) {  
-            selected = d3.select("#" + e)
-                .filter(function(e) { return e.id != countryDetail; })
-                .classed("involved", true)
-                .style("fill", function(e) {
-                    result = $.grep(data, function(a) { return a.country == e.id; })
-
-                    if (result.length > 0) {
-                        if (_displayIP == "source") {
-                            res = $.grep(result[0].sources.countries, function(a) { return a.code == countryDetail; });
-                            if (res.length > 0) { return choropleth_target(res[0].count); }
-                        } else {
-                            res = $.grep(result[0].targets.countries, function(a) { return a.code == countryDetail; });
-                            if (res.length > 0) { return choropleth_source(res[0].count); }
-                        }
-                    }
-                })
-            })
-
-        // If countryOfInterest attacks on itself, draw it striped
-        if (($.grep(_participants, function(e) { return e == countryDetail })).length > 0) {
-            countryOfInterest = ( $.grep(data, function(e) { return e.country == countryDetail}) )[0];
-
-            d3.select("#color_a").attr("fill", function() {
-                return choropleth_source(countryOfInterest.attacked_sb);
-            })
-            d3.select("#color_b").attr("fill", function() {
-                return choropleth_target(countryOfInterest.was_attacked);
-            })
-            active.style("fill", "url(#stripes)");
-        }
-
-        countryAttacksFlag = true;
-    }
-
     function clicked(d) {
         
         // pokud se jiz zobrazuji obeti/utocnici statu d, ukonci nahled
@@ -514,64 +378,9 @@ $(window).load(function () {
             showInvolvedCountries("target", ".victim", participants);
         }
 
-        showArcs(d);
+        showCurves(d);
     }
 
-    function prepareArcData(d) {
-
-        var lineData = [];
-
-        var x1 = path.centroid(d)[0];
-        var y1 = path.centroid(d)[1];
-
-        d3.selectAll(".involved")
-                            .each(function(d) {
-                                var x3 = path.centroid(d)[0];
-                                var y3 = path.centroid(d)[1];
-
-                                var x2 = (x1 + x3) / 2;
-                                var y2 = (y1 + y3) / 2 - 60;
-
-                                var newLine = [];
-                                newLine.push({ x: x1, y: y1 });
-                                newLine.push({ x: x2, y: y2 });
-                                newLine.push({ x: x3, y: y3 });
-
-                                lineData.push(newLine);
-
-                            })
-
-        return lineData;
-    }   
-
-
-    function showArcs(d) {
-
-        lineData = prepareArcData(d);
-        
-        var lineFunction = d3.line()
-                              .curve(d3.curveBasis)
-                              .x(function(d) { return (d.x); })
-                              .y(function(d) { return (d.y); })
-
-        lineData.forEach(function(e) {
-            curves.append("path")
-                            .attr("d", lineFunction(e))
-                            .style("stroke", "#666666")
-                            .style("stroke-width", "1.5px")
-                            .style("fill", "none")
-                            .attr("class", "curve")
-                    // .attr("transform", "translate(" + 150 + ", " + 300 + ")");
-        })
-
-    }
-
-    function removeCurves() {
-        d3.selectAll(".curve").remove();
-        active.classed("active", false);
-        countryDetail = "";
-    }
-    
     function rightclicked(d) {
         d3.event.preventDefault();
 
@@ -599,44 +408,195 @@ $(window).load(function () {
         createSunburst(d);
         focusOnCountry(d);
     }
-    
-    d3.select(window).on('resize', function() {
-        width = $(window).width();
-        height = $(window).height();
-    });
 
+    function zoomed() {
+        if (!blockTransform) {
+            transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+            g.attr("transform", transform);
 
-    function displayTheWorld() {
-        blockTransform = false;
-        if (countryAttacksFlag) {
-            showChoropleth();
-            countryAttacksFlag = false;
-            countryDetail = "";
-            d3.selectAll(".involved").classed("involved", false);
-            
-            removeCurves();
-
+            d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
+            curves.attr("transform", transform)
         }
+    };
 
-        active.classed("active", false);
-        active = d3.select(null);
-        
-        translate = [width/2, height/2];
-        projection.translate(translate);
-                                path = d3.geo.path().projection(projection)
-                                d3.selectAll("path")//.transition(500)
-                                                    .attr("d", path);
-        transform = "";
-        g.transition()
-            .duration(750)
-            .style("stroke-width", "1.5px")
-            .attr("transform", transform);
-        zoom.scale(1);
-        zoom.translate([0, 0]);
 
-        removeSunburst();
+    // ----- SUNBURST Interactivity -----
+    function sunburstClicked(d) {
+        if (d.depth == 3) {
+            console.log("Open event " + d.event_id);    
+        }
     }
 
+    function sunburstMouseover(d) {
+
+        var sequence = getAncestors(d);
+        
+        showCaption(sequence);
+
+        // Fade all the segments
+        d3.selectAll(".sunburst_strip")
+                                .style("opacity", 0.3);
+
+        // Highlight only those that are an ancestor of the current segment.
+        d3.selectAll(".sunburst_strip")
+                                .filter(function(a) {
+                                    return (sequence.indexOf(a) >= 0);
+                                  })
+                                .style("opacity", 1);
+
+        d3.selectAll(".caption").style("visibility", "");
+    }
+
+    function sunburstMouseleave(d) {
+        d3.selectAll(".caption").style("visibility", "hidden");
+        d3.selectAll(".sunburst_strip").style("opacity", 1)
+    }
+
+
+    // ----- show / remove -----
+    function showChoropleth() {
+        d3.selectAll(".attacker").classed("attacker", false);
+        d3.selectAll(".victim").classed("victim", false);  
+        removeCurves();
+
+                d3.selectAll(".country-boundary")
+                        .style("fill", function(d) {
+
+                            var result;
+                            if (GeoMenu.getDisplayIP() == "source") {
+                                result = $.grep(data, function(a) { return a.country == d.id; })
+                                if (result.length > 0) {
+                                    if (result[0].attacked_sb_filter != 0) { 
+
+                                        d3.select(this).classed("attacker", true)
+                                                       // .classed("displayed", true);
+
+                                        return choropleth_source(result[0].attacked_sb_filter);
+                                    }
+                                }
+                            } else {
+                                result = $.grep(data, function(a){ return a.country == d.id; });
+                                if (result.length > 0) {
+                                    if (result[0].was_attacked_filter != 0) {
+
+                                        d3.select(this).classed("victim", true)
+                                                       // .classed("displayed", true);
+                                        
+                                        return choropleth_target(result[0].was_attacked_filter);
+                                    }
+                                }
+                            }
+                        })
+
+        updateLegend();
+    }
+
+    function showInvolvedCountries(_displayIP, _classSelector, _participants) {
+        d3.selectAll(".involved").classed("involved", false);
+        d3.selectAll(_classSelector)
+                            .filter(function(e) { return e.id != countryDetail; })
+                            .classed("attacker", false)
+                            .classed("victim", false)
+                            .style("fill", "#ccc");
+
+        // Draw CHOROPLETH of attackers/victims of countryDetail
+        _participants.forEach(function(e) {  
+            selected = d3.select("#" + e)
+                .filter(function(e) { return e.id != countryDetail; })
+                .classed("involved", true)
+                .style("fill", function(e) {
+                    result = $.grep(data, function(a) { return a.country == e.id; })
+
+                    if (result.length > 0) {
+                        if (_displayIP == "source") {
+                            res = $.grep(result[0].sources.countries, function(a) { return a.code == countryDetail; });
+                            if (res.length > 0) { return choropleth_target(res[0].count); }
+                        } else {
+                            res = $.grep(result[0].targets.countries, function(a) { return a.code == countryDetail; });
+                            if (res.length > 0) { return choropleth_source(res[0].count); }
+                        }
+                    }
+                })
+            })
+
+        // If countryOfInterest attacks on itself, draw it striped
+        if (($.grep(_participants, function(e) { return e == countryDetail })).length > 0) {
+            countryOfInterest = ( $.grep(data, function(e) { return e.country == countryDetail}) )[0];
+
+            d3.select("#color_a").attr("fill", function() {
+                return choropleth_source(countryOfInterest.attacked_sb);
+            })
+            d3.select("#color_b").attr("fill", function() {
+                return choropleth_target(countryOfInterest.was_attacked);
+            })
+            active.style("fill", "url(#stripes)");
+        }
+
+        countryAttacksFlag = true;
+    }
+
+    function showCurves(d) {
+        lineData = prepareArcData(d);
+
+        lineData.forEach(function(e) {
+            curves.append("path")
+                            .attr("d", lineFunction(e))
+                            .attr("class", "curve")
+                            .style({
+                                "stroke"       : "#666666",
+                                "stroke-width" : "1.5px",
+                                "fill"         : "none"
+                            })
+        })
+    }
+
+    function removeCurves() {
+        d3.selectAll(".curve").remove();
+        active.classed("active", false);
+        countryDetail = "";
+    }
+    
+    // ----- update -----
+    function updateChoroplethDomains() {
+        choropleth_source.domain([
+                            d3.min(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MAX_VALUE : d.attacked_sb_filter; }),
+                            d3.max(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MIN_VALUE : d.attacked_sb_filter; }),
+            ]);
+
+        choropleth_target.domain([
+                            d3.min(data, function(d) { return d.was_attacked_filter == 0 ? Number.MAX_VALUE : d.was_attacked_filter; }),
+                            d3.max(data, function(d) { return d.was_attacked_filter == 0 ? Number.MIN_VALUE : d.was_attacked_filter; })
+            ]);
+    }
+
+    function updateLegend() {
+        legend.selectAll("rect")
+            .style("fill", function(d) {
+                if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.range()[d];
+                } else {
+                    return choropleth_target.range()[d];
+                }    
+            })
+
+        legendMin.text(function() {
+            if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.domain()[0];
+                } else {
+                    return choropleth_target.domain()[0];
+                }
+            })
+    
+        legendMax.text(function() {
+            if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.domain()[1];
+                } else {
+                    return choropleth_target.domain()[1];
+                }
+            })
+    }
+    
+    // Map display / zoom 
     function initFocus() {
         
         var xMin = width,
@@ -656,8 +616,6 @@ $(window).load(function () {
                                         } else return false;
                                     }).each(function(d) {
                                         var bounds = path.bounds(d);
-                                        // console.log(d.id);
-                                        // console.log(bounds);
                                         if (bounds[0][0] < xMin) {  // left  
                                             xMin = bounds[0][0];
                                             left = d.id;
@@ -676,9 +634,6 @@ $(window).load(function () {
                                         }
                                     })
 
-        // console.log(xMin, xMax, yMin, yMax);
-        // console.log(left, right, top, bottom);
-       
         dx = xMax - xMin,       // right - left
         dy = yMax - yMin,       // bottom - top
         x = (xMax - xMin) / 2;  // (left - rigth) / 2
@@ -687,12 +642,10 @@ $(window).load(function () {
         } else {
             y = (yMin + yMax) / 2;  // (top - bottom) / 2
         }
-        // console.log(dx, dy, x, y);
 
 
         scale = 1 / Math.max(dx / width, dy / (height - menu_height)),
         translate = [width / 2 - scale * x, height / 2 - scale * y]
-        // console.log(scale, translate);
 
         g.transition()
                     .duration(750)
@@ -732,7 +685,6 @@ $(window).load(function () {
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-        
     }
 
     // Reset to the last user transformation
@@ -746,120 +698,44 @@ $(window).load(function () {
             .duration(750)
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
-
     };
 
-    
+    function displayTheWorld() {
+        blockTransform = false;
+        if (countryAttacksFlag) {
+            showChoropleth();
+            countryAttacksFlag = false;
+            countryDetail = "";
+            d3.selectAll(".involved").classed("involved", false);
+            
+            removeCurves();
 
-    function zoomed() {
-        if (!blockTransform) {
-            transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
-            g.attr("transform", transform);
-
-            d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
-            curves.attr("transform", transform)
-        }
-    };
-
-    function sunburstClicked(d) {
-        switch(d.depth) {
-/*
-        //     case 1:     // country
-        //     case 2:     // attack type
-
-        //         // d3.selectAll(".sunburst_strip").on("mouseover", null);
-        //         var curr_children = d3.selectAll(".sunburst_strip")
-        //                             .filter(function(a) {
-        //                                 return (a.parent == d);
-        //                             })
-        //                             .on("mouseover", null);
-        //         // d3.selectAll(".sunburst_strip")
-        //         //                     .filter(function(a) {
-        //         //                         return (a.parent == d);
-        //         //                     })
-        //         //                     .on("mouseover", null)
-        //                             // .classed("invisible_strip", false);
-        //         curr_children.style("visibility", "");
-
-        //         curr_children.each("end", function() {
-        //                                 d3.select(this).on("mouseover", sunburstMouseover)
-        //                             });
-
-        //         // d3.selectAll(".sunburst_strip").on("mouseover", sunburstMouseover);
-
-        //         break;
-*/
-            case 3:     // ip
-                console.log("Open event " + d.event_id);
-                // console.log(d.event_id);
-
-
-                break; 
         }
 
-    }
-
-    function sunburstMouseover(d) {
-
-        var sequence = getAncestors(d);
-        // console.log(sequence);
+        active.classed("active", false);
+        active = d3.select(null);
         
-        showCaption(sequence);
+        translate = [width/2, height/2];
+        projection.translate(translate);
+                                path = d3.geo.path().projection(projection)
+                                d3.selectAll("path")//.transition(500)
+                                                    .attr("d", path);
+        transform = "";
+        g.transition()
+            .duration(750)
+            .style("stroke-width", "1.5px")
+            .attr("transform", transform);
+        zoom.scale(1);
+        zoom.translate([0, 0]);
 
-        // Fade all the segments
-        d3.selectAll(".sunburst_strip")
-                                .style("opacity", 0.3);
-
-        // Highlight only those that are an ancestor of the current segment.
-        d3.selectAll(".sunburst_strip")
-                                .filter(function(a) {
-                                    return (sequence.indexOf(a) >= 0);
-                                  })
-                                .style("opacity", 1);
-
-        d3.selectAll(".caption").style("visibility", "");
-
-        // Expand the small segments ? 
-        // console.log(d.dx, d.dy);
-        // if (d.dx < 0.05) {
-        //     console.log("dx")
-        //     d.dx = 0.05;
-        // }
+        removeSunburst();
     }
 
-    function sunburstMouseleave(d) {
-        d3.selectAll(".caption").style("visibility", "hidden");
-        d3.selectAll(".sunburst_strip").style("opacity", 1)
-    }
 
-    function showCaption(sequence) {
-        // sequence.forEach(function(e) {
-            // console.log(e.name);
-            if (sequence[0]) d3.select("#caption_country").text(sequence[0].name);
-            if (sequence[1]) {
-                d3.select("#caption_type").text(sequence[1].name);
-            } else {
-                d3.select("#caption_type").text("");
-            }
-            if (sequence[2]) {
-                d3.select("#caption_ip").text(sequence[2].name);
-            } else {
-                d3.select("#caption_ip").text("");
-            }
-        // })
-    }
-
-    // Given a node in a partition layout, return an array of all of its ancestor
-    // nodes, highest first, but excluding the root.
-    function getAncestors(node) {
-      var path = [];
-      var current = node;
-      while (current.parent) {
-        path.unshift(current);
-        current = current.parent;
-      }
-      return path;
-    }
+    d3.select(window).on('resize', function() {
+        width = $(window).width();
+        height = $(window).height();
+    });
 
 
     /////////////////////////////////////////////////////////////////////////
@@ -867,9 +743,6 @@ $(window).load(function () {
     //                    Create Sunburst Visualization                    //
     //                                                                     //
     /////////////////////////////////////////////////////////////////////////
-    function removeSunburst() {
-        d3.selectAll("#sunburst").remove();
-    }
 
     function createSunburst(d) {
 
@@ -886,7 +759,6 @@ $(window).load(function () {
                             .attr("id", "sunburst");
 
         var result = $.grep(data, function(e) { return e.country == d.id; });
-        
         if (result.length == 1) {
             sunburst_data = result[0];
         } else { 
@@ -895,64 +767,48 @@ $(window).load(function () {
         }
 
         var hierarchy = buildHierarchy(sunburst_data);
-        // console.log("hierarchy");
-        // console.log(hierarchy);
-
         var nodes = partition.nodes(hierarchy);
-        // console.log("nodes");
-        // console.log(nodes);
-        sunburst.append("circle")
-                                .attr("id", "sunburst_circle")
-                                .attr("r", radius * 1.45)
-                                .attr("fill", "white")
+
+        sunburst.append("circle").attr({
+                                    "id"   : "sunburst_circle",
+                                    "r"    : radius * 1.45,
+                                    "fill" : "white"
+                                })
                                 .on("mouseleave", sunburstMouseleave);
 
         var sunburst_paths = sunburst.selectAll("path")
                                 .data(nodes)
                                 .enter()
                                 .append("path")
-                                .attr("class", "sunburst_strip")
-                                .attr("display", function(d) { return d.depth ? null : "none"; })
-                                .attr("d", arc)
-                                .style("fill", function(d) {
-                                    return color((d.children ? d : d.parent).name); 
+                                .attr({
+                                    "class"   : "sunburst_strip",
+                                    "display" : function(d) { return d.depth ? null : "none"; },
+                                    "d"       : arc
                                 })
-                                // show only first level
-                                // .style("visibility", function(d) {
-                                //     if (d.depth != 1) return "hidden";
-                                //     return "";
-                                // })
-                                .style("stroke-width", "1px")
-                                .style("stroke", "white")
-                                .style("opacity", 0.5)
-                                // .classed("invisible_strip", function(d) {
-                                //     if (d.depth != 1) return true;
-                                //     return false;
-                                // })
-                                .on("click", sunburstClicked)
-                                .on("mouseenter", sunburstMouseover);
+                                .style({
+                                    "fill" : function(d) { return color((d.children ? d : d.parent).name); },
+                                    "stroke-width": "1px",
+                                    "stroke"      : "white",
+                                    "opacity"     : 0.5
+                                })
+                                .on({
+                                    "click"      : sunburstClicked,
+                                    "mouseenter" : sunburstMouseover
+                                });
 
-        sunburst.append("text")
-                                .attr("id", "caption_country")
-                                .attr("class", "caption")
-                                .attr("dy", -40);
-
-        sunburst.append("text")
-                                .attr("id", "caption_type")
-                                .attr("class", "caption")
-                                .attr("dy", -10);
-        
-        sunburst.append("text")
-                                .attr("id", "caption_ip")
-                                .attr("class", "caption")
-                                .attr("dy", 35);
-
-
+        // Sunburst strip description
+        sunburst.append("text").attr({ "id": "caption_country", "class": "caption", "dy": -40 })
+        sunburst.append("text").attr({ "id": "caption_type", "class": "caption", "dy": -10 })
+        sunburst.append("text").attr({ "id": "caption_ip", "class": "caption", "dy": 35 })
+                            
         totalSize = sunburst_paths.node().__data__.value;
     }
 
+    function removeSunburst() {
+        d3.selectAll("#sunburst").remove();
+    }
+
     function buildHierarchy(d) {
-        
         var root;
 
         if (GeoMenu.getDisplayIP() == "source") {
@@ -960,11 +816,7 @@ $(window).load(function () {
 
         } else {    // target
             root = getSunburstData(d.sources.countries);    // ziskej data o zdrojovych statech
-
         }
-
-        // console.log(root);
-
         return root;
     }
 
@@ -979,7 +831,6 @@ $(window).load(function () {
 
             new_country_child = {
                 name     : country.code,
-                // size :
                 children : []   // attack types
             }
 
@@ -1012,137 +863,77 @@ $(window).load(function () {
 
         return root;
     }
-    // --------------------------------------------------------------------------------
-    function contains(array, obj) {
-        for (var i = 0; i < array.length; i++) {
-            if (array[i] === obj) {
-                return true;
-            }
+
+    // Given a node in a partition layout, return an array of all of its ancestor
+    // nodes, highest first, but excluding the root.
+    function getAncestors(node) {
+      var path = [];
+      var current = node;
+      while (current.parent) {
+        path.unshift(current);
+        current = current.parent;
+      }
+      return path;
+    }
+
+    function showCaption(sequence) {
+        if (sequence[0]) d3.select("#caption_country").text(sequence[0].name);
+        if (sequence[1]) {
+            d3.select("#caption_type").text(sequence[1].name);
+        } else {
+            d3.select("#caption_type").text("");
         }
-        return false;
+        if (sequence[2]) {
+            d3.select("#caption_ip").text(sequence[2].name);
+        } else {
+            d3.select("#caption_ip").text("");
+        }
     }
 
-    function showChoropleth() {
-        d3.selectAll(".attacker").classed("attacker", false);
-        d3.selectAll(".victim").classed("victim", false);  
-        removeCurves();
-
-                // g.selectAll("path")
-                d3.selectAll(".country-boundary")
-                        .style("fill", function(d) {
-
-                            // console.log(d)
-
-
-                            var result;
-                            if (GeoMenu.getDisplayIP() == "source") {
-                                result = $.grep(data, function(a) { return a.country == d.id; })
-                                if (result.length > 0) {
-                                    if (result[0].attacked_sb_filter != 0) { 
-
-                                        d3.select(this).classed("attacker", true)
-                                                       // .classed("displayed", true);
-
-                                        return choropleth_source(result[0].attacked_sb_filter);
-                                    }
-                                }
-                            } else {
-                                result = $.grep(data, function(a){ return a.country == d.id; });
-                                if (result.length > 0) {
-                                    if (result[0].was_attacked_filter != 0) {
-
-                                        d3.select(this).classed("victim", true)
-                                                       // .classed("displayed", true);
-                                        
-                                        return choropleth_target(result[0].was_attacked_filter);
-                                    }
-                                }
-                            }
-                        })
-        updateLegend();
-    }
-
-    ///////////////////////////////////////////////////////////////////
-    // --------- Event listeners + button functionality --------- // //
-    ///////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    //                                                                     //
+    //               Event listeners + button functionality                //
+    //                                                                     //
+    /////////////////////////////////////////////////////////////////////////
 
     $("#geo-menu").on('geomenuUpdate', function(e) {
         switch(e.detail) {
+
             case 'displayIP':
-
                 showChoropleth();
-
-
-                
                 break;
 
             case 'showNames':
-
-                // console.log("Show names: ");
-                g.selectAll("text")
-                    .attr("visibility", function(d) {
-                        if (GeoMenu.getDisplayCountryNames()) {
-                            return "visible";
-                        } else {
-                            return "hidden";
-                        }
+                g.selectAll("text").attr("visibility", function(d) {
+                        return GeoMenu.getDisplayCountryNames() ? "visible" : "hidden";
                     })
-
                 break;
-            case 'showAttacks':
 
+            case 'showAttacks':
                 updateAttackCounts();
                 updateChoroplethDomains();
-                showChoropleth()
-
+                showChoropleth();
                 break;
         }
     });
-
-    function updateAttackCounts() {
-
-        console.log(" ---- Update Attack Counts ---- ")
-        console.log(GeoMenu.getShowAttacks());
-
-
-        data.forEach(function(country) {
-            country.was_attacked_filter = 0;
-            country.attacked_sb_filter = 0;
-
-            country.sources.countries.forEach(function(source) {
-                source.attack_types.forEach(function(attack_type) {
-                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
-                        country.was_attacked_filter += attack_type.count;
-                    }
-                })
-            })
-
-            country.targets.countries.forEach(function(target) {
-                target.attack_types.forEach(function(attack_type) {
-                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
-                        country.attacked_sb_filter += attack_type.count;
-                    }
-                })
-            })
-        })
-
-        console.log(data);
-    }
-
+    
     $('#assignUnknown').click(function() {
         // console.log(data);
         // initFocus();
-        showArcs();
+        showCurves();
     });
 
     $('#defaultDisplay').click(function() {
+
         displayTheWorld();
     });
 
 
-    ///////////////////////////////////////////////////////////////
-    // ------------------- DATA PREPROCESS --------------------- //
-    ///////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    //                                                                     //
+    //              Data preprocess, update and preparation                //
+    //                                                                     //
+    /////////////////////////////////////////////////////////////////////////
 
     function readData(events) {
 
@@ -1278,7 +1069,6 @@ $(window).load(function () {
                 countries: []
             }
         }
-        // console.log(new_country_overview);
         return new_country_overview;
     }
 
@@ -1288,7 +1078,6 @@ $(window).load(function () {
             count        : 0,
             attack_types : []
         }
-        // console.log(new_involved_country)
         return new_involved_country;
     }
 
@@ -1310,76 +1099,77 @@ $(window).load(function () {
         return ip;
     }
 
+    // On   F I L T E R I N G
+    function updateAttackCounts() {
 
-});
+        console.log(" ---- Update Attack Counts ---- ")
+        console.log(GeoMenu.getShowAttacks());
 
+        data.forEach(function(country) {
+            country.was_attacked_filter = 0;
+            country.attacked_sb_filter = 0;
 
-/*
-    
-    CURVES
-    // svg.append
-    // .attr("stroke", "yellow")
-    // .attr("stroke-width", "3px");
+            country.sources.countries.forEach(function(source) {
+                source.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.was_attacked_filter += attack_type.count;
+                    }
+                })
+            })
 
-    // svg.selectAll('path')
-    //                 .data(lineData)
-    //                 .enter().append('path')
-   // .attr('d', function(d) { return line(d.p); })
-   // .attr('stroke-width', function(d) { return d.w; })
-   // .attr('stroke', function(d) { return d.c; });
+            country.targets.countries.forEach(function(target) {
+                target.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.attacked_sb_filter += attack_type.count;
+                    }
+                })
+            })
+        })
 
-    //The data for our line
-    // var lineData = [ { "x": 1,   "y": 5},  { "x": 20,  "y": 20},
-    //               { "x": 40,  "y": 10}, { "x": 60,  "y": 40},
-    //               { "x": 80,  "y": 5},  { "x": 100, "y": 60}];
- 
-    //  //This is the accessor function we talked about above
-    //  var lineFunction = d3.svg.line()
-    //                           .x(function(d) { return d.x; })
-    //                           .y(function(d) { return d.y; })
-    //                          .interpolate("");
+        // console.log(data);
+    }
 
-    // svg.append("path")
-    //             .attr("d", lineFunction(lineData))
-    //             .attr("stroke", "blue")
-    //             .attr("stroke-width", 2)
-    //             .attr("fill", "none");
-*/
+    // On   Display CURVES between attacker and victims
+    function prepareArcData(d) {
+        var lineData = [];
 
-/*
-    Curves
+        var x1 = path.centroid(d)[0];
+        var y1 = path.centroid(d)[1];
 
-            var line = d3.line()
-                .x(function(d) { return d.x; })
-                .y(function(d) { return d.y; })
-                // .x(function(d) { return path.centroid(d)[0]; })
-                // .y(function(d) { return path.centroid(d)[1]; })
-                .curve(d3.curveBasis);
+        d3.selectAll(".involved")
+                            .each(function(d) {
+                                var x3 = path.centroid(d)[0];
+                                var y3 = path.centroid(d)[1];
 
-            var lineData = [
-                        {x: 300, y: 500},
-                        {x: 800, y: 300},
-                        {x: 1300, y: 500}
-                        ]
-            
+                                var x2 = (x1 + x3) / 2;
+                                var y2 = (y1 + y3) / 2 - 60;
 
-            curves.selectAll("path")
-                            .data([1])
-                                    // .data(lineData)
-                            .enter()
-                            .append("path")
-                            .attr("class", "curves")
-                            .attr("d", function(d) { 
-                                return line(lineData); 
+                                var newLine = [];
+                                newLine.push({ x: x1, y: y1 });
+                                newLine.push({ x: x2, y: y2 });
+                                newLine.push({ x: x3, y: y3 });
+
+                                lineData.push(newLine);
 
                             })
-                            // .attr("x", function(d) {
-                            //     return path.centroid(d)[0];
-                            // })
-                            // .attr("y", function(d) {
-                            //     return path.centroid(d)[1];
-                            // })
-                            .style("stroke-width", "2px")
-                            .style("stroke", "black")
-                            .style("fill", "none");
-*/                                    
+        return lineData;
+    }   
+
+
+    /////////////////////////////////////////////////////////////////////////
+    //                                                                     //
+    //                      General helpful functions                      //
+    //                                                                     //
+    /////////////////////////////////////////////////////////////////////////
+
+    function contains(array, obj) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === obj) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+});
