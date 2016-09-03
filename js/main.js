@@ -148,6 +148,11 @@ $(window).load(function () {
 
                       // .style("stroke-width", "2px").style("stroke", "black")
 
+    var lan = svg.append("g")
+                    .attr({
+                        "id" : "lanBubble"
+                    })
+
     var curves = svg.append("g")
                             .attr("class", "curves");
                             
@@ -261,6 +266,35 @@ $(window).load(function () {
                         // .call(drag);
                         // .call(drag);
 
+            var lanRadius = 70;
+            lan.append("circle")
+                        .attr("id", "LAN")
+                        // .attr("d", d3.select("#LAN"))
+                        .attr({
+                            "r": lanRadius,
+                            "cx": function() { return lanRadius + 100; },
+                            "cy": function() { return height - menu_height - (lanRadius + 100); },
+                            "class" : "country-boundary"
+                        })
+                        .style({
+                            "fill": "#ccc",
+                            "stroke-width": "1px",
+                            "stroke": "white"
+                        })
+            lan.append("text")
+                        .text("LAN") // "unknown"
+                        .attr({
+                            "x": function() { return lanRadius + 100; },
+                            "y": function() { return height - menu_height - (lanRadius + 88); }, //+95
+                            "text-anchor": "middle",
+                            "font-size": "25pt" // "18pt"
+                        })
+                        .style({
+                            "fill":"white"
+                        })
+                        .on("mouserover", function() {
+                            // d3.event.preventDefault();
+                        })
 
 
             g.selectAll("text")
@@ -888,8 +922,12 @@ $(window).load(function () {
         d3.selectAll(".victim").classed("victim", false);  
         removeCurves();
 
-                g.selectAll("path")
+                // g.selectAll("path")
+                d3.selectAll(".country-boundary")
                         .style("fill", function(d) {
+
+                            console.log(d)
+
 
                             var result;
                             if (GeoMenu.getDisplayIP() == "source") {

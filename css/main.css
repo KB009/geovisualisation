@@ -50,6 +50,10 @@ path.victim path.attacker {
   /*fill: black !important;*/
 }
 
+#LAN:hover {
+  fill: gray !important;
+}
+
 /**
  * SUNBURST Diagram
  */
