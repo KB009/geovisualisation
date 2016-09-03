@@ -148,6 +148,7 @@ $(window).load(function () {
 
                       // .style("stroke-width", "2px").style("stroke", "black")
 
+
     var lan = svg.append("g")
                     .attr({
                         "id" : "lanBubble"
@@ -187,6 +188,78 @@ $(window).load(function () {
             .attr({ id: "color_b", width:"3", height:"6", transform:"translate(3,0)", fill:"#000000" })
   
 
+    // ---------- LEGEND -------------
+
+    var legend = svg.append("g")
+                            .attr("id", "legend");
+    legend.selectAll("rect")
+                        .data(d3.range(5))
+                        .enter()
+                        .append("rect")
+                        .attr({
+                            "x" : function(d) { return width - (220 - d * 35); },
+                            "y" : function(d) { return height - menu_height - 50; },
+                            "width" : 35,
+                            "height": 20
+                        })
+                        .style({ 
+                            "fill" : function(d) { return choropleth_source.range()[d]; },
+                            "stroke-width" : "1px",
+                            "stroke" : "white"
+
+                        })
+    var legendMin = legend.append("text")
+                        .attr({
+                            "x" : function(d) { return width - (220); },
+                            "y" : function(d) { return height - menu_height - 60; }
+                        })
+                        .style({
+                            "text-anchor" : "start",
+                            "font-size"   : "8pt",
+                            "font-weight" : "bold",
+                            "font-family" : "sans-serif"
+                        });
+
+    var legendMax = legend.append("text")
+                        .attr({
+                            "id": "legend_min",
+                            "x" : function(d) { return width - (220 - 5 * 35); },
+                            "y" : function(d) { return height - menu_height - 60; }
+                        })
+                        .style({
+                            "text-anchor" : "end",
+                            "font-size"   : "8pt",
+                            "font-weight" : "bold",
+                            "font-family" : "sans-serif"
+                        });
+
+    function updateLegend() {
+        legend.selectAll("rect")
+            .style("fill", function(d) {
+                if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.range()[d];
+                } else {
+                    return choropleth_target.range()[d];
+                }    
+            })
+
+        legendMin.text(function() {
+            if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.domain()[0];
+                } else {
+                    return choropleth_target.domain()[0];
+                }
+            })
+    
+        legendMax.text(function() {
+            if (GeoMenu.getDisplayIP() == "source") {
+                    return choropleth_source.domain()[1];
+                } else {
+                    return choropleth_target.domain()[1];
+                }
+            })
+    }
+
     // -------------------------------------------------------------------------
 
     function initGeoMenu() {
@@ -197,13 +270,14 @@ $(window).load(function () {
 
     function updateChoroplethDomains() {
         choropleth_source.domain([
-                            d3.min(data, function(d) { return d.attacked_sb_filter; }),
-                            d3.max(data, function(d) { return d.attacked_sb_filter; })
+                            d3.min(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MAX_VALUE : d.attacked_sb_filter; }),
+                            d3.max(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MIN_VALUE : d.attacked_sb_filter; }),
+                            // d3.max(data, function(d) { return d.attacked_sb_filter; })
             ]);
 
         choropleth_target.domain([
-                            d3.min(data, function(d) { return d.was_attacked_filter; }),
-                            d3.max(data, function(d) { return d.was_attacked_filter; })
+                            d3.min(data, function(d) { return d.was_attacked_filter == 0 ? Number.MAX_VALUE : d.was_attacked_filter; }),
+                            d3.max(data, function(d) { return d.was_attacked_filter == 0 ? Number.MIN_VALUE : d.was_attacked_filter; })
             ]);
         
     }
@@ -985,6 +1059,7 @@ $(window).load(function () {
                                 }
                             }
                         })
+        updateLegend();
     }
 
     ///////////////////////////////////////////////////////////////////
@@ -996,6 +1071,8 @@ $(window).load(function () {
             case 'displayIP':
 
                 showChoropleth();
+
+
                 
                 break;
 
