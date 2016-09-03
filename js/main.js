@@ -114,7 +114,7 @@ $(window).load(function () {
                                     if (d3.event.keyCode == 27) { // Esc
                                         removeSunburst();
                                         // removeCurves();
-                                        showChoroplet();
+                                        showChoropleth();
                                         unfocus();
                                     }
                                 })
@@ -189,20 +189,31 @@ $(window).load(function () {
 
     // -------------------------------------------------------------------------
 
+    function initGeoMenu() {
+        GeoMenu.setDisplayIP("source");
+        GeoMenu.setDisplayCountryNames(false);
+        GeoMenu.setShowAttacks(["INSTMSG", "COUNTRY"]);
+    }
+
+    function updateChoroplethDomains() {
+        choropleth_source.domain([
+                            d3.min(data, function(d) { return d.attacked_sb_filter; }),
+                            d3.max(data, function(d) { return d.attacked_sb_filter; })
+            ]);
+
+        choropleth_target.domain([
+                            d3.min(data, function(d) { return d.was_attacked_filter; }),
+                            d3.max(data, function(d) { return d.was_attacked_filter; })
+            ]);
+        
+    }
+
     // Vsechny udalosti
     var events = d3.json("data/Events500.txt", function(error, events) {
 
         readData(events);
-
-        choropleth_source.domain([
-                            d3.min(data, function(d) { return d.attacked_sb; }),
-                            d3.max(data, function(d) { return d.attacked_sb; })
-            ]);
-
-        choropleth_target.domain([
-                            d3.min(data, function(d) { return d.was_attacked; }),
-                            d3.max(data, function(d) { return d.was_attacked; })
-            ]);
+        initGeoMenu();
+        updateChoroplethDomains();
 
         return events;
     });
@@ -268,13 +279,13 @@ $(window).load(function () {
 
             var lanRadius = 70;
             lan.append("circle")
-                        .attr("id", "LAN")
+                        // .attr("id", "LAN")
                         // .attr("d", d3.select("#LAN"))
                         .attr({
                             "r": lanRadius,
                             "cx": function() { return lanRadius + 100; },
                             "cy": function() { return height - menu_height - (lanRadius + 100); },
-                            "class" : "country-boundary"
+                            // "class" : "country-boundary"
                         })
                         .style({
                             "fill": "#ccc",
@@ -380,7 +391,7 @@ $(window).load(function () {
         if (countryAttacksFlag && countryDetail == d.id) {
             unfocus();
             removeSunburst();
-            showChoroplet();
+            showChoropleth();
             countryAttacksFlag = false;
             countryDetail = "";
             d3.selectAll(".involved").classed("involved", false);
@@ -411,10 +422,21 @@ $(window).load(function () {
 
         var participants = [];
         if (GeoMenu.getDisplayIP() == "source") {
-            countryOfInterest.targets.countries.forEach(function(e) { participants.push(e.code); })
+            countryOfInterest.targets.countries.forEach(function(e) { 
+                e.attack_types.forEach(function(type) {
+                    if (!contains(GeoMenu.getShowAttacks(), type.type_id)) { return; }
+                    participants.push(e.code); 
+                })
+            })
             showInvolvedCountries("source", ".attacker", participants);
         } else {
-            countryOfInterest.sources.countries.forEach(function(e) { participants.push(e.code); })
+            countryOfInterest.sources.countries.forEach(function(e) { 
+                e.attack_types.forEach(function(type) {
+                    if (!contains(GeoMenu.getShowAttacks(), type.type_id)) { return; }
+                    participants.push(e.code); 
+                })
+             })
+
             showInvolvedCountries("target", ".victim", participants);
         }
 
@@ -513,7 +535,7 @@ $(window).load(function () {
     function displayTheWorld() {
         blockTransform = false;
         if (countryAttacksFlag) {
-            showChoroplet();
+            showChoropleth();
             countryAttacksFlag = false;
             countryDetail = "";
             d3.selectAll(".involved").classed("involved", false);
@@ -889,6 +911,8 @@ $(window).load(function () {
 
             country.attack_types.forEach(function(type) {
 
+                if (!contains(GeoMenu.getShowAttacks(), type.type_id)) { return; }
+
                 new_attack_child = { 
                     name     : type.type_id,
                     size     : type.count,
@@ -915,9 +939,16 @@ $(window).load(function () {
         return root;
     }
     // --------------------------------------------------------------------------------
-    
+    function contains(array, obj) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] === obj) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    function showChoroplet() {
+    function showChoropleth() {
         d3.selectAll(".attacker").classed("attacker", false);
         d3.selectAll(".victim").classed("victim", false);  
         removeCurves();
@@ -926,30 +957,30 @@ $(window).load(function () {
                 d3.selectAll(".country-boundary")
                         .style("fill", function(d) {
 
-                            console.log(d)
+                            // console.log(d)
 
 
                             var result;
                             if (GeoMenu.getDisplayIP() == "source") {
                                 result = $.grep(data, function(a) { return a.country == d.id; })
                                 if (result.length > 0) {
-                                    if (result[0].attacked_sb != 0) { 
+                                    if (result[0].attacked_sb_filter != 0) { 
 
                                         d3.select(this).classed("attacker", true)
                                                        // .classed("displayed", true);
 
-                                        return choropleth_source(result[0].attacked_sb);
+                                        return choropleth_source(result[0].attacked_sb_filter);
                                     }
                                 }
                             } else {
                                 result = $.grep(data, function(a){ return a.country == d.id; });
                                 if (result.length > 0) {
-                                    if (result[0].was_attacked != 0) {
+                                    if (result[0].was_attacked_filter != 0) {
 
                                         d3.select(this).classed("victim", true)
                                                        // .classed("displayed", true);
                                         
-                                        return choropleth_target(result[0].was_attacked);
+                                        return choropleth_target(result[0].was_attacked_filter);
                                     }
                                 }
                             }
@@ -964,13 +995,13 @@ $(window).load(function () {
         switch(e.detail) {
             case 'displayIP':
 
-                showChoroplet();
+                showChoropleth();
                 
                 break;
 
             case 'showNames':
 
-                console.log("Show names: ");
+                // console.log("Show names: ");
                 g.selectAll("text")
                     .attr("visibility", function(d) {
                         if (GeoMenu.getDisplayCountryNames()) {
@@ -983,9 +1014,43 @@ $(window).load(function () {
                 break;
             case 'showAttacks':
 
+                updateAttackCounts();
+                updateChoroplethDomains();
+                showChoropleth()
+
                 break;
         }
     });
+
+    function updateAttackCounts() {
+
+        console.log(" ---- Update Attack Counts ---- ")
+        console.log(GeoMenu.getShowAttacks());
+
+
+        data.forEach(function(country) {
+            country.was_attacked_filter = 0;
+            country.attacked_sb_filter = 0;
+
+            country.sources.countries.forEach(function(source) {
+                source.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.was_attacked_filter += attack_type.count;
+                    }
+                })
+            })
+
+            country.targets.countries.forEach(function(target) {
+                target.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.attacked_sb_filter += attack_type.count;
+                    }
+                })
+            })
+        })
+
+        console.log(data);
+    }
 
     $('#assignUnknown').click(function() {
         // console.log(data);
@@ -1019,14 +1084,14 @@ $(window).load(function () {
             var r = $.grep(data, function(e){ return e.country == source_state; });
 
             // create new overview data for the source_state
+            var curr_source_data;
             if (r.length == 0) {
-                var curr_source_data = createCountryOverviewData(source_state);
+                curr_source_data = createCountryOverviewData(source_state);
                 data.push(curr_source_data);
-
             // get data for the source_state
             } else if (r.length == 1) {
                 curr_source_data = r[0];
-            } 
+            }
 
             // GET TARGETS
             for (var j = 0; j < events[i].targets.length; j++) {
@@ -1064,6 +1129,7 @@ $(window).load(function () {
                 // Update sums 
                 curr_target_ip.count++;
                 curr_source_data.attacked_sb++;
+                curr_source_data.attacked_sb_filter++;
                 curr_source_type.count++;
                 curr_attacked_state.count++;
 
@@ -1085,7 +1151,7 @@ $(window).load(function () {
                 if (r.length == 0) {
                     curr_attacking_state = createInvolvedCountry(source_state);
                     curr_target_data.sources.countries.push(curr_attacking_state);
-                } else if (r.length == 0) {
+                } else if (r.length == 1) {
                     curr_attacking_state = r[0];
                 }
 
@@ -1110,10 +1176,10 @@ $(window).load(function () {
 
                 // Update sums 
                 curr_source_ip.count++;
-                curr_target_data.was_attacked++;
                 curr_target_type.count++;
+                curr_target_data.was_attacked++;
+                curr_target_data.was_attacked_filter++;
                 curr_attacking_state.count++;
-
  
             }
         }
@@ -1123,9 +1189,11 @@ $(window).load(function () {
 
     function createCountryOverviewData(state_code) {
         var new_country_overview = {
-            country       : state_code,
-            attacked_sb   : 0,      // kolikrat utocil na nekoho
-            was_attacked  : 0,      // kolikrat na nej bylo utoceno
+            country             : state_code,
+            attacked_sb         : 0,      // kolikrat utocil na nekoho
+            attacked_sb_filter  : 0,      
+            was_attacked        : 0,      // kolikrat na nej bylo utoceno
+            was_attacked_filter : 0,      
             sources: {              // zdrojove staty, ktere nan utocili
                 countries: []
             },
@@ -1133,6 +1201,7 @@ $(window).load(function () {
                 countries: []
             }
         }
+        // console.log(new_country_overview);
         return new_country_overview;
     }
 
@@ -1142,6 +1211,7 @@ $(window).load(function () {
             count        : 0,
             attack_types : []
         }
+        // console.log(new_involved_country)
         return new_involved_country;
     }
 

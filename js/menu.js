@@ -11,7 +11,7 @@
 var GeoMenu = {
   displayIP : "source",
   displayCountryNames : false,
-  showAttacks : ["type1", "type3"],
+  showAttacks : ["INSTMSG", "COUNTRY"],
 
   //div-radio-display -- display IP addresses
   setDisplayIP: function(newValue) {
@@ -204,7 +204,7 @@ $(document).ready(function() {
   for (var i = 0; i < checkAttacks.length; i++) {
     checkAttacks[i].onclick = function() {
       var attacks = [];
-      attacks.push("type1");
+      attacks.push("COUNTRY");
       // TO FINISH
       
       GeoMenu.setShowAttacks(attacks);
