@@ -388,8 +388,8 @@ $(window).load(function () {
         var res = $.grep(data, function(e) { return e.country == d.id; }); 
         if (res.length == 0) { return; }
         else {
-            if ( (GeoMenu.getDisplayIP() == "source" && res[0].attacked_sb == 0) ||
-                (GeoMenu.getDisplayIP() == "target" && res[0].was_attacked == 0) ) {
+            if ( (GeoMenu.getDisplayIP() == "source" && res[0].attacked_sb_filter == 0) ||
+                (GeoMenu.getDisplayIP() == "target" && res[0].was_attacked_filter == 0) ) {
                 return;
             }
         }
