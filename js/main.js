@@ -16,6 +16,8 @@ $(window).load(function () {
     var attackTypes = [];
     var countryNames;
 
+    var unknownAssignedTo = null;
+
     var svg;
 
     // ---------- MAP -------------
@@ -920,8 +922,136 @@ $(window).load(function () {
     $('#assignUnknown').click(function() {
         // console.log(data);
         // initFocus();
-        showCurves();
+        // 
+        var options = ["CZ", "GB", "CH", "IE", "CA"];
+        unknownAssignedTo = options[Math.floor(Math.random() * 5)];
+        // console.log(options[Math.floor(Math.random() * 5)]);
+        unknownAssignedTo = "IE";
+        console.log(unknownAssignedTo);
+
+        assignUnknownCountryTo(unknownAssignedTo);
+
     });
+
+    function assignUnknownCountryTo(toCountry) {
+        // Get UNKNOWN's Data if exist, otherwise Return 
+        var unknown = $.grep(data, function(e) { return e.country == "XXX"});
+        if (unknown.length == 0 || unknown.length > 1) { return false; }
+
+        // Get toCountry's Data
+        var res = $.grep(data, function(e) { return e.country == toCountry})
+        var selectedCountry;
+        if (res.length == 0) {
+            selectedCountry = createCountryOverviewData(toCountry);
+            data.push(selectedCountry);
+        } else if (res.length == 1) {
+            selectedCountry = res[0]; //console.log(res[0])
+        } else { console.log("Weirdo"); }
+
+        // console.log(unknown[0])
+        mergeData(unknown[0], selectedCountry);
+
+        showChoropleth();
+
+    }
+
+
+    // first part and second part only differ in accessing targets or sources and adding to attacked_sb or was_attacked
+    function mergeData(fromCountry, toCountry) {
+        if (fromCountry.attacked_sb_filter > 0) {
+            fromCountry.targets.countries.forEach(function(country) {
+
+                res = $.grep(toCountry.targets.countries, function(e) { return e.code == country.code});
+                if (res.length == 0) {
+                    console.log("Country " + country.code + " does not exist")
+                    upd_involved_country = createInvolvedCountry(country.code);
+                    toCountry.targets.countries.push(upd_involved_country);
+                    // create new involved country
+                } else if (res.length == 1) {
+                    upd_involved_country = res[0];
+                } else { console.log("Weirdos"); }
+
+                console.log("upd_involved_country");
+                console.log(upd_involved_country);
+                console.log(fromCountry);
+                // curr_involved_country
+                
+                country.attack_types.forEach(function(attack_type) {
+                    res = $.grep(upd_involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; });
+                    
+                    if (res.length == 0) {
+                        console.log("Attack_type " + attack_type + " does not exist");
+                        upd_attack_type = createType(attack_type.type_id);
+                        upd_involved_country.attack_types.push(upd_attack_type);
+                    } else if (res.length == 1) {
+                        upd_attack_type = res[0];
+                    } else { console.log("Weirdos") }
+                    // console.log(upd_attack_type)
+
+                    attack_type.ips.forEach(function (ip) {
+                        console.log(ip)
+                        upd_attack_type.ips.push(ip);
+                    })
+
+                    upd_attack_type.count += attack_type.count;
+
+                }) 
+
+                upd_involved_country.count += country.count;
+                toCountry.attacked_sb_filter += fromCountry.attacked_sb_filter;
+                toCountry.attacked_sb += fromCountry.attacked_sb_filter;
+                console.log(upd_involved_country);
+
+            })
+        }
+
+        if (fromCountry.was_attacked_filter > 0) {
+            fromCountry.sources.countries.forEach(function(country) {
+                res = $.grep(toCountry.sources.countries, function(e) { return e.code == country.code});
+                if (res.length == 0) {
+                    console.log("Country " + country.code + " does not exist")
+                    upd_involved_country = createInvolvedCountry(country.code);
+                    toCountry.sources.countries.push(upd_involved_country);
+                    // create new involved country
+                } else if (res.length == 1) {
+                    upd_involved_country = res[0];
+                } else { console.log("Weirdos"); }
+
+                console.log("upd_involved_country");
+                console.log(upd_involved_country);
+                console.log(fromCountry);
+                // curr_involved_country
+                
+                country.attack_types.forEach(function(attack_type) {
+                    res = $.grep(upd_involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; });
+                    
+                    if (res.length == 0) {
+                        console.log("Attack_type " + attack_type + " does not exist");
+                        upd_attack_type = createType(attack_type.type_id);
+                        upd_involved_country.attack_types.push(upd_attack_type);
+                    } else if (res.length == 1) {
+                        upd_attack_type = res[0];
+                    } else { console.log("Weirdos") }
+                    // console.log(upd_attack_type)
+
+                    attack_type.ips.forEach(function (ip) {
+                        console.log(ip)
+                        upd_attack_type.ips.push(ip);
+                    })
+
+                    upd_attack_type.count += attack_type.count;
+
+                }) 
+
+                upd_involved_country.count += country.count;
+                toCountry.was_attacked_filter += fromCountry.was_attacked_filter;
+                toCountry.was_attacked += fromCountry.was_attacked_filter;
+                console.log(upd_involved_country);
+            })
+        }
+        console.log(data)
+        // fromCountry.forEach
+    }
 
     $('#defaultDisplay').click(function() {
 
