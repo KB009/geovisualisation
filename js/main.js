@@ -920,15 +920,18 @@ $(window).load(function () {
     });
     
     $('#assignUnknown').click(function() {
-        // console.log(data);
-        // initFocus();
-        if (!unknownAssignedTo) {
-            console.log("empty string")
+
+        if (unknownAssignedTo) {
+            var unknown = $.grep(data, function(e) { return e.country == "XXX"});
+            if (unknown.length == 0 || unknown.length > 1) { return false; }
+
+            subtractUnknownData(unknownAssignedTo);
+            unknownAssignedTo = "ES";   // TO DO / Get chosen Country
+        } else {
+            unknownAssignedTo = "IE";   // TO DO / Get chosen Country
+            
         }
         
-        unknownAssignedTo = "IE";   // TO DO / Get chosen Country
-        console.log(unknownAssignedTo);
-
         assignUnknownCountryTo(unknownAssignedTo);
 
     });
@@ -936,7 +939,10 @@ $(window).load(function () {
     function assignUnknownCountryTo(toCountry) {
         // Get UNKNOWN's Data if exist, otherwise Return 
         var unknown = $.grep(data, function(e) { return e.country == "XXX"});
-        if (unknown.length == 0 || unknown.length > 1) { return false; }
+        if (unknown.length == 0 || unknown.length > 1) { 
+            unknownAssignedTo = "";
+            return false; 
+        }
 
         // Get toCountry's Data
         var res = $.grep(data, function(e) { return e.country == toCountry})
@@ -952,7 +958,77 @@ $(window).load(function () {
         mergeData(unknown[0], selectedCountry);
 
         showChoropleth();
+    }
 
+    function subtractUnknownData(fromCountryCode) {
+
+        console.log("Sunbtract Unknown Data");
+
+        // Get UNKNOWN's Data if exist, otherwise Return 
+        var unknown = ($.grep(data, function(e) { return e.country == "XXX"}))[0];
+        if (unknown.length == 0 || unknown.length > 1) { 
+            unknownAssignedTo = "";
+            return false;
+        }
+
+        // Get toCountry's Data
+        var fromCountry = ($.grep(data, function(e) { return e.country == fromCountryCode}) )[0];
+        // console.log(unknown.attacked_sb);
+
+        if (unknown.attacked_sb > 0) {
+            unknown.targets.countries.forEach(function(country) {
+                var involved_country = ($.grep(fromCountry.targets.countries, function(e) { return e.code == country.code}))[0];
+                // console.log("involved_country");
+                // console.log(involved_country);
+                // stejny
+                country.attack_types.forEach(function(attack_type) {
+                    var involved_attack_type = ($.grep(involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; }))[0];
+
+                    attack_type.ips.forEach(function(ip) {
+                        ip_index = involved_attack_type.ips.indexOf(ip);
+                        // console.log(ip_index);
+                        if (ip_index > -1) {
+                            involved_attack_type.ips.splice(ip_index, 1)
+                        }
+                    })
+
+                    involved_attack_type.count -= attack_type.count;
+                })
+
+                involved_country.count -= country.count;
+
+            })
+            fromCountry.attacked_sb -= unknown.attacked_sb;
+            fromCountry.attacked_sb_filter -= unknown.attacked_sb_filter;
+        }
+
+
+        if (unknown.was_attacked > 0) {
+            unknown.sources.countries.forEach(function(country) {
+                var involved_country = ($.grep(fromCountry.sources.countries, function(e) { return e.code == country.code}))[0];
+                // console.log("involved_country");
+                // console.log(involved_country);
+                // stejny
+                country.attack_types.forEach(function(attack_type) {
+                    var involved_attack_type = ($.grep(involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; }))[0];
+
+                    attack_type.ips.forEach(function(ip) {
+                        ip_index = involved_attack_type.ips.indexOf(ip);
+                        // console.log(ip_index, ip.event_id);
+                        if (ip_index > -1) {
+                            involved_attack_type.ips.splice(ip_index, 1)
+                        }
+                    })
+
+                    involved_attack_type.count -= attack_type.count;
+                })
+
+                involved_country.count -= country.count;
+
+            })
+            fromCountry.was_attacked -= unknown.was_attacked;
+            fromCountry.was_attacked_filter -= unknown.was_attacked_filter;
+        }
     }
 
 
@@ -963,7 +1039,7 @@ $(window).load(function () {
 
                 res = $.grep(toCountry.targets.countries, function(e) { return e.code == country.code});
                 if (res.length == 0) {
-                    console.log("Country " + country.code + " does not exist")
+                    // console.log("Country " + country.code + " does not exist")
                     upd_involved_country = createInvolvedCountry(country.code);
                     toCountry.targets.countries.push(upd_involved_country);
                     // create new involved country
@@ -971,16 +1047,16 @@ $(window).load(function () {
                     upd_involved_country = res[0];
                 } else { console.log("Weirdos"); }
 
-                console.log("upd_involved_country");
-                console.log(upd_involved_country);
-                console.log(fromCountry);
+                // console.log("upd_involved_country");
+                // console.log(upd_involved_country);
+                // console.log(fromCountry);
                 // curr_involved_country
                 
                 country.attack_types.forEach(function(attack_type) {
                     res = $.grep(upd_involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; });
                     
                     if (res.length == 0) {
-                        console.log("Attack_type " + attack_type + " does not exist");
+                        // console.log("Attack_type " + attack_type + " does not exist");
                         upd_attack_type = createType(attack_type.type_id);
                         upd_involved_country.attack_types.push(upd_attack_type);
                     } else if (res.length == 1) {
@@ -989,7 +1065,7 @@ $(window).load(function () {
                     // console.log(upd_attack_type)
 
                     attack_type.ips.forEach(function (ip) {
-                        console.log(ip)
+                        // console.log(ip)
                         upd_attack_type.ips.push(ip);
                     })
 
@@ -998,18 +1074,18 @@ $(window).load(function () {
                 }) 
 
                 upd_involved_country.count += country.count;
-                toCountry.attacked_sb_filter += fromCountry.attacked_sb_filter;
-                toCountry.attacked_sb += fromCountry.attacked_sb;
                 console.log(upd_involved_country);
 
             })
+            toCountry.attacked_sb_filter += fromCountry.attacked_sb_filter;
+            toCountry.attacked_sb += fromCountry.attacked_sb;
         }
 
         if (fromCountry.was_attacked > 0) {
             fromCountry.sources.countries.forEach(function(country) {
                 res = $.grep(toCountry.sources.countries, function(e) { return e.code == country.code});
                 if (res.length == 0) {
-                    console.log("Country " + country.code + " does not exist")
+                    // console.log("Country " + country.code + " does not exist")
                     upd_involved_country = createInvolvedCountry(country.code);
                     toCountry.sources.countries.push(upd_involved_country);
                     // create new involved country
@@ -1017,16 +1093,16 @@ $(window).load(function () {
                     upd_involved_country = res[0];
                 } else { console.log("Weirdos"); }
 
-                console.log("upd_involved_country");
-                console.log(upd_involved_country);
-                console.log(fromCountry);
+                // console.log("upd_involved_country");
+                // console.log(upd_involved_country);
+                // console.log(fromCountry);
                 // curr_involved_country
                 
                 country.attack_types.forEach(function(attack_type) {
                     res = $.grep(upd_involved_country.attack_types, function(e){ return e.type_id == attack_type.type_id; });
                     
                     if (res.length == 0) {
-                        console.log("Attack_type " + attack_type + " does not exist");
+                        // console.log("Attack_type " + attack_type + " does not exist");
                         upd_attack_type = createType(attack_type.type_id);
                         upd_involved_country.attack_types.push(upd_attack_type);
                     } else if (res.length == 1) {
@@ -1035,7 +1111,7 @@ $(window).load(function () {
                     // console.log(upd_attack_type)
 
                     attack_type.ips.forEach(function (ip) {
-                        console.log(ip)
+                        // console.log(ip)
                         upd_attack_type.ips.push(ip);
                     })
 
@@ -1046,7 +1122,7 @@ $(window).load(function () {
                 upd_involved_country.count += country.count;
                 toCountry.was_attacked_filter += fromCountry.was_attacked_filter;
                 toCountry.was_attacked += fromCountry.was_attacked;
-                console.log(upd_involved_country);
+                // console.log(upd_involved_country);
             })
         }
         console.log(data)
