@@ -16,7 +16,7 @@ $(window).load(function () {
     var attackTypes = [];
     var countryNames;
 
-    var unknownAssignedTo = null;
+    var unknownAssignedTo = "";
 
     var svg;
 
@@ -922,11 +922,11 @@ $(window).load(function () {
     $('#assignUnknown').click(function() {
         // console.log(data);
         // initFocus();
-        // 
-        var options = ["CZ", "GB", "CH", "IE", "CA"];
-        unknownAssignedTo = options[Math.floor(Math.random() * 5)];
-        // console.log(options[Math.floor(Math.random() * 5)]);
-        unknownAssignedTo = "IE";
+        if (!unknownAssignedTo) {
+            console.log("empty string")
+        }
+        
+        unknownAssignedTo = "IE";   // TO DO / Get chosen Country
         console.log(unknownAssignedTo);
 
         assignUnknownCountryTo(unknownAssignedTo);
@@ -958,7 +958,7 @@ $(window).load(function () {
 
     // first part and second part only differ in accessing targets or sources and adding to attacked_sb or was_attacked
     function mergeData(fromCountry, toCountry) {
-        if (fromCountry.attacked_sb_filter > 0) {
+        if (fromCountry.attacked_sb > 0) {
             fromCountry.targets.countries.forEach(function(country) {
 
                 res = $.grep(toCountry.targets.countries, function(e) { return e.code == country.code});
@@ -999,13 +999,13 @@ $(window).load(function () {
 
                 upd_involved_country.count += country.count;
                 toCountry.attacked_sb_filter += fromCountry.attacked_sb_filter;
-                toCountry.attacked_sb += fromCountry.attacked_sb_filter;
+                toCountry.attacked_sb += fromCountry.attacked_sb;
                 console.log(upd_involved_country);
 
             })
         }
 
-        if (fromCountry.was_attacked_filter > 0) {
+        if (fromCountry.was_attacked > 0) {
             fromCountry.sources.countries.forEach(function(country) {
                 res = $.grep(toCountry.sources.countries, function(e) { return e.code == country.code});
                 if (res.length == 0) {
@@ -1045,7 +1045,7 @@ $(window).load(function () {
 
                 upd_involved_country.count += country.count;
                 toCountry.was_attacked_filter += fromCountry.was_attacked_filter;
-                toCountry.was_attacked += fromCountry.was_attacked_filter;
+                toCountry.was_attacked += fromCountry.was_attacked;
                 console.log(upd_involved_country);
             })
         }
