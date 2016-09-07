@@ -11,6 +11,7 @@
 var GeoMenu = {
   displayIP : "source",
   displayCountryNames : false,
+  allAttacks : [],
   showAttacks : ["INSTMSG", "COUNTRY"],
 
   //div-radio-display -- display IP addresses
@@ -47,22 +48,65 @@ var GeoMenu = {
     return GeoMenu.displayCountryNames;
   },
 
-  setShowAttacks: function(newValue) {
-    GeoMenu.showAttacks = newValue;
+  setAllAttacks: function(newValue) {
+    GeoMenu.allAttacks = newValue;
     
     for (var i = 0; i < newValue.length; i++) {
-        var checkbox = '<td><input type="checkbox" id="checkbox-' + i + '" name="checkbox-'  + i + '"></td>',
-            label = "<td><label for='checkbox-" + i + "'>" + newValue[i] + "</label></td>";
+        var checkbox, label;
+        
+        if (GeoMenu.showAttacks.indexOf(newValue[i]) === -1)
+            checkbox = '<td><input type="checkbox" id="checkbox-' + i + '" name="' + newValue[i] + '"></td>';
+        else
+            checkbox = '<td><input type="checkbox" id="checkbox-' + i + '" name="' + newValue[i] + '" checked></td>';
+            
+        label = "<td><label for='checkbox-" + i + "'>" + newValue[i] + "</label></td>";
     
         $(".check-attacks").append('<tr>' + checkbox + label + '</tr>');
     }
-     
+         
+    var evt = new CustomEvent('geomenuUpdate', { detail: 'showAttacks'});
+    document.getElementById("geo-menu").dispatchEvent(evt);
+    
+  },
+  getAllAttacks: function() {
+    return GeoMenu.allAttacks;
+  },
+  setShowAttacks: function(newValue) {  
+    var checkboxes = $(".check-attacks tr input"); 
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        // if the checkbox is found in new values and isn't checked
+        if (newValue.indexOf(checkboxes[i].name) !== -1 && checkboxes[i].checked === false) {
+            $(checkboxes[i]).prop('checked', true);
+        }
+        // if the checkbox isn't found in new values and is checked
+        else if (newValue.indexOf(checkboxes[i].name) === -1 && checkboxes[i].checked === true) {
+            $(checkboxes[i]).prop('checked', false);
+        }            
+    } 
+    
+    GeoMenu.showAttacks = newValue;
+    
     var evt = new CustomEvent('geomenuUpdate', { detail: 'showAttacks'});
     document.getElementById("geo-menu").dispatchEvent(evt);
     
   },
   getShowAttacks: function() {
     return GeoMenu.showAttacks;
+  },
+  initAttacksSelection: function() {
+    // ********* C H E C K / Attack types **********
+    var checkAttacks = document.getElementsByClassName("check-attacks")[0].rows;
+
+    for (var i = 0; i < checkAttacks.length; i++) {
+        var ch = document.getElementById('checkbox-' + i);
+        ch.onclick = function() {
+        if (this.checked && GeoMenu.getShowAttacks().indexOf(this.name) === -1)
+            GeoMenu.showAttacks.push(this.name);
+        else if (this.checked === false && GeoMenu.getShowAttacks().indexOf(this.name) !== -1)
+            GeoMenu.showAttacks.splice(this.name, 1);
+      };
+    }  
   }
   
 };
@@ -118,29 +162,7 @@ GeoMenu.render = function() {
     'id':'column-checkbox-attackType'
   }).append($('<h2/>').html("Typ útoku"))
     .append("<table class='check-attacks'></table>");
-    /*$('<input/>', {
-      'type':'checkbox',
-      'id':'check-attack-1',
-      'name':'check-attacks',
-      'checked':'checked'
-    }))
-    .append($('<label/>', { 'for':'check-attack-1'}).html("Utok 1"))
-    .append($('<br>'))
-    .append($('<input/>', {
-      'type':'checkbox',
-      'id':'check-attack-2',
-      'name':'check-attacks'
-    }))
-    .append($('<label/>', { 'for':'check-attack-2'}).html("Utok 2"))
-    .append($('<br>'))
-    .append($('<input/>', {
-      'type':'checkbox',
-      'id':'check-attack-3',
-      'name':'check-attacks',
-      'checked':'checked'
-    }))
-    .append($('<label/>', { 'for':'check-attack-3'}).html("Utok 3"));*/
-    // .append($('<br>'))
+
    $(menuwrapper).append(checkboxAttackType);
    
 
@@ -199,19 +221,5 @@ $(document).ready(function() {
     // console.log(showNames.checked);
     GeoMenu.setDisplayCountryNames(showNames.checked);
     
-  }
-
-  // ********* C H E C K / Attack types **********
-  var checkAttacks = document.getElementsByName("check-attacks");
-  // console.log(checkAttacks);
-
-  for (var i = 0; i < checkAttacks.length; i++) {
-    checkAttacks[i].onclick = function() {
-      var attacks = [];
-      attacks.push("COUNTRY");
-      // TO FINISH
-      
-      GeoMenu.setShowAttacks(attacks);
-    }
   }
 })
