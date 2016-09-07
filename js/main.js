@@ -1259,6 +1259,7 @@ $(window).load(function () {
         }
         console.log(data);
         console.log(attackTypes);
+        GeoMenu.setShowAttacks(attackTypes);
     }
 
     function createCountryOverviewData(state_code) {

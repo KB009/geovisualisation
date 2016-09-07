@@ -15,7 +15,7 @@ var GeoMenu = {
 
   //div-radio-display -- display IP addresses
   setDisplayIP: function(newValue) {
-    displayIP = newValue; // is it ok? Do I have to use object namespace?
+    GeoMenu.displayIP = newValue;
     // console.log("setDisplayIP");
 
     if (newValue == "source") {
@@ -29,11 +29,11 @@ var GeoMenu = {
     
   },
   getDisplayIP: function() {
-    return displayIP;
+    return GeoMenu.displayIP;
   }, 
 
   setDisplayCountryNames: function(newValue) {
-    displayCountryNames = newValue;
+    GeoMenu.displayCountryNames = newValue;
     // console.log("setDisplayCountryNames");
 
     document.getElementById('check-show-label').checked = newValue;
@@ -44,24 +44,27 @@ var GeoMenu = {
   },
   getDisplayCountryNames: function() {
     // console.log("getDisplayCountryNames: " + displayCountryNames);
-    return displayCountryNames;
+    return GeoMenu.displayCountryNames;
   },
 
   setShowAttacks: function(newValue) {
-    showAttacks = newValue;
-    // console.log("setShowAttacks");
-
-    // TO FINISH
+    GeoMenu.showAttacks = newValue;
+    
+    for (var i = 0; i < newValue.length; i++) {
+        var checkbox = '<td><input type="checkbox" id="checkbox-' + i + '" name="checkbox-'  + i + '"></td>',
+            label = "<td><label for='checkbox-" + i + "'>" + newValue[i] + "</label></td>";
+    
+        $(".check-attacks").append('<tr>' + checkbox + label + '</tr>');
+    }
      
     var evt = new CustomEvent('geomenuUpdate', { detail: 'showAttacks'});
     document.getElementById("geo-menu").dispatchEvent(evt);
     
   },
   getShowAttacks: function() {
-    return showAttacks;
+    return GeoMenu.showAttacks;
   }
-
-
+  
 };
 
 GeoMenu.render = function() {
@@ -114,7 +117,8 @@ GeoMenu.render = function() {
     'class':'menu-column',
     'id':'column-checkbox-attackType'
   }).append($('<h2/>').html("Typ útoku"))
-    .append($('<input/>', {
+    .append("<table class='check-attacks'></table>");
+    /*$('<input/>', {
       'type':'checkbox',
       'id':'check-attack-1',
       'name':'check-attacks',
@@ -135,10 +139,10 @@ GeoMenu.render = function() {
       'name':'check-attacks',
       'checked':'checked'
     }))
-    .append($('<label/>', { 'for':'check-attack-3'}).html("Utok 3"));
+    .append($('<label/>', { 'for':'check-attack-3'}).html("Utok 3"));*/
     // .append($('<br>'))
    $(menuwrapper).append(checkboxAttackType);
-
+   
 
 
 
