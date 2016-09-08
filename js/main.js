@@ -4,7 +4,9 @@ $(window).load(function () {
     //canvas resolution
     var width = $(window).width(),
         height = $(window).height(),
-        rotate = [0,0],
+        mapwidth = 0.9 * width,
+        mapheight = height - 260,
+        rotate = [-10,0],
         translate = [width/2, height/2],
         active = d3.select(null),
         menu_height = 185,
@@ -22,7 +24,9 @@ $(window).load(function () {
 
     // ---------- MAP -------------
     var projection = d3.geo.mercator()
-                            .scale(width/7)
+                            .rotate(rotate)
+                            // .scale(width/7)
+                            .scale(1)
                             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path().projection(projection);
@@ -58,18 +62,91 @@ $(window).load(function () {
 
 
     // ------------- BEHAVIOUR --------------
+    
 
+    // var rotate = 0
+    var maxlat = 83;
+
+    // find the top left and bottom right of current projection
+    function mercatorBounds(projection, maxlat) {
+        var yaw = projection.rotate()[0],
+            xymax = projection([-yaw+180-1e-6,-maxlat]),
+            xymin = projection([-yaw-180+1e-6, maxlat]);
+        return [xymin,xymax];
+    }
+
+    // set up the scale extent and initial scale for the projection
+    var b = mercatorBounds(projection, maxlat),
+        s = mapwidth/(b[1][0]-b[0][0]),
+        scaleExtent = [s, 10*s];
+
+    console.log(width, scaleExtent, b[1][0], b[0][0])
+    projection.scale(scaleExtent[0]);
+
+    var zoom = d3.behavior.zoom()
+                    .scaleExtent(scaleExtent)
+                    .scale(projection.scale())
+                    .translate([0,0])
+                    .on("zoom", redraw);
+
+    path = d3.geo.path()
+    .projection(projection);
+
+    var tlast = [0, 0],
+        slast = null;
+
+    function redraw() {
+        if (d3.event && !blockTransform) { 
+            var scale = d3.event.scale,
+                t = d3.event.translate;                
+            
+            // if scaling changes, ignore translation (otherwise touch zooms are weird)
+            if (scale != slast) {
+                projection.scale(scale);
+            } else {
+                var dx = t[0]-tlast[0],
+                    dy = t[1]-tlast[1],
+                    yaw = projection.rotate()[0],
+                    tp = projection.translate();
+            
+                // use x translation to rotate based on current scale
+                projection.rotate([yaw+360.*dx/mapwidth*scaleExtent[0]/scale, 0, 0]);
+                // use y translation to translate projection, clamped by min/max
+                var b = mercatorBounds(projection, maxlat);
+                if (b[0][1] + dy > 0) dy = -b[0][1];
+                else if (b[1][1] + dy < mapheight) dy = mapheight-b[1][1];
+                projection.translate([tp[0],tp[1]+dy]);
+            }
+
+            // save last values.  resetting zoom.translate() and scale() would
+            // seem equivalent but doesn't seem to work reliably?
+            slast = scale;
+            tlast = t;
+            
+            g.selectAll('path')       // re-project path data
+                .attr('d', path);
+
+
+            // transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+            // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
+                // d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
+        }
+
+
+    }
+
+
+
+    // ------------- BEHAVIOUR --------------
+/*
     var drag = d3.behavior.drag()
                             .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
                             .on("drag", function() {
 
                                 if (!blockTransform) {
-                                // rotate[0] += d3.event.x / 2;
-                                // console.log(d3.event.x)
                                 rotate[0] = d3.event.x;
                                 translate[0] = width/2;
 
-                                // translate[1] = height/2 + d3.event.y;
                                 translate[1] += d3.event.y;
                                 if (translate[1] > height) {
                                     translate[1] = height;
@@ -93,9 +170,12 @@ $(window).load(function () {
 
                             });  
 
-    var zoom = d3.behavior.zoom()
-                            .scaleExtent([1, 10])
-                            .on("zoom", zoomed);
+    // var zoom = d3.behavior.zoom()
+    //                         .scaleExtent([1, 10])
+    //                         // .on("zoom", zoomed);
+    //                         .on("zoom", redraw)
+
+*/
 
     // on ESC, cancel the view 
     d3.select("body").on("keydown", function() {
@@ -117,18 +197,20 @@ $(window).load(function () {
     svg = d3.select("body").append("svg")
                                 .attr("id", "svg")
                             // .attr("width", width)
-                            // .attr("height", height)
+                            // .attr("height", mapheight)
                             // .attr("preserveAspectRatio", "xMinYMin meet")
                             // .classed("svg-content-responsive", true)
-                            .attr("viewBox", "0 0 " + width + " " + height);
+                            .attr("viewBox", "0 0 " + width + " " + height)
+                            // .call(zoom);
 
     var g = svg.append("g")
                         .attr("id", "map_wrap")
                         .style("stroke-width", "1px")
-                        .call(drag)
+                        // .call(drag)
                         .call(zoom)
-                        .on({ "mousedown.zoom" : null, "touchstart.zoom": null,
-                            "touchmove.zoom" : null, "touchend.zoom"  : null });
+                        // .on({ "mousedown.zoom" : null, "touchstart.zoom": null,
+                        //     "touchmove.zoom" : null, "touchend.zoom"  : null });
+                        //     "dblclick.zoom" : null });
 
     g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
 
@@ -138,7 +220,8 @@ $(window).load(function () {
                             
     var sunburst_wrap = svg.append("g")                    
                             .attr("id", "sunburst_wrap")
-                            .attr("transform", "translate(" + width/2 + "," + ((height - menu_height)/2) + ")");
+                            .attr("transform", "translate(" + width/2 + "," + (mapheight/2 + 30) + ")")
+                            .on("zoom", null);
 
     var sunburst;
 
@@ -225,6 +308,7 @@ $(window).load(function () {
         readData(events);
         initGeoMenu();
         updateChoroplethDomains();
+        redraw();
 
         return events;
     });
@@ -299,20 +383,19 @@ $(window).load(function () {
                             .data(topojson.feature(json, json.objects.countries).features)
                             .enter()
                             .append("text")
+                            .attr("class", "countryNames")
                             .text(function(d) {
                                 return names[String(d.id)];
                             })
-                            .attr("x", function(d) {
-                                return path.centroid(d)[0];
+                            .attr({
+                                "x" : function(d) { return path.centroid(d)[0]; },
+                                "y" : function(d) { return path.centroid(d)[1]; },
+                                "text-anchor" : "middle",
+                                "font-size"   : "8pt",
+                                "font-family" : "sans-serif",
+                                "visibility"  : "hidden"
                             })
-                            .attr("y", function(d) {
-                                return path.centroid(d)[1];
-                            })
-                            .attr("text-anchor", "middle")
-                            .attr("font-size", "6pt")
-                            .attr("font-family", "sans-serif")
-                            .attr("visibility", "hidden");
-
+                            .on("zoom", null);
             // initFocus();
         })
 
@@ -413,11 +496,61 @@ $(window).load(function () {
 
     function zoomed() {
         if (!blockTransform) {
+
+            rotate[0] = d3.event.translate[0];
+
+            translate[0] = width/2;
+            translate[1] += d3.event.translate[1];
+
+            if (translate[1] > height) {
+                translate[1] = height;
+            }
+            if (translate[1] < 0) {
+                translate[1] = 0;
+            }
+
+
+            projection.rotate(rotate).translate(translate);
+            path = d3.geo.path().projection(projection);
+
+            d3.selectAll("path").attr("d", path);
+
+                                // if (!blockTransform) {
+                                // // rotate[0] += d3.event.x / 2;
+                                // // console.log(d3.event.x)
+                                // rotate[0] = d3.event.x;
+                                // translate[0] = width/2;
+
+                                // // translate[1] = height/2 + d3.event.y;
+                                // translate[1] += d3.event.y;
+                                // if (translate[1] > height) {
+                                //     translate[1] = height;
+                                // }
+                                // if (translate[1] < 0) {
+                                //     translate[1] = 0;
+                                // }
+                                
+
+                                        // }
+
             transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
+            // curves.attr("transform", transform)
+            transform = "scale(" + d3.event.scale + ")";
             g.attr("transform", transform);
 
             d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
             curves.attr("transform", transform)
+
+            d3.selectAll(".countryNames").attr("transform", transform);
+
+            // var newTextSize = Math.ceil(8 / d3.event.scale);
+            // console.log(newTextSize);
+            // d3.selectAll(".countryNames").attr({
+            //     "transform" : transform,
+            //     "font-size" : newTextSize
+            //     });
+            // console.log(d3.event.scale);
+
         }
     };
 
@@ -671,7 +804,7 @@ $(window).load(function () {
             y = (bounds[0][1] + bounds[1][1]) / 2,  // (top - bottom) / 2
             scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
-        console.log(scale, translate);
+        // console.log(scale, translate);
             
 
         // zoom.scale(scale);
