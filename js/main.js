@@ -96,6 +96,7 @@ $(window).load(function () {
         slast = null;
 
     function redraw() {
+        // if (d3.event && !blockTransform) { 
         if (d3.event && !blockTransform) { 
             var scale = d3.event.scale,
                 t = d3.event.translate;                
@@ -493,7 +494,7 @@ $(window).load(function () {
         createSunburst(d);
         focusOnCountry(d);
     }
-
+/*
     function zoomed() {
         if (!blockTransform) {
 
@@ -553,7 +554,7 @@ $(window).load(function () {
 
         }
     };
-
+*/
 
     // ----- SUNBURST Interactivity -----
     function sunburstClicked(d) {
@@ -816,10 +817,18 @@ $(window).load(function () {
           // console.log("right " + bounds[1][0] + " inverted: " + projection.invert([bounds[1][0], bounds[0][1]]));
           // console.log("left " + bounds[0][0] + " inverted: " + projection.invert([bounds[0][0], bounds[0][1]] ));
 
+        // projection.scale(scale);
+        // projection.translate(translate);
+
+
+        // path = d3.geo.path().projection(projection);
+        // d3.selectAll("path").attr("d", path);
+
         g.transition()
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+                    
     }
 
     // Reset to the last user transformation
@@ -828,6 +837,9 @@ $(window).load(function () {
 
         active.classed("active", false);
         active = d3.select(null);
+
+        // zoom.scale(1);
+        // zoom.translate([0, 0]);
 
         g.transition()
             .duration(750)
@@ -850,19 +862,27 @@ $(window).load(function () {
         active.classed("active", false);
         active = d3.select(null);
         
-        translate = [width/2, height/2];
-        projection.translate(translate);
-                                path = d3.geo.path().projection(projection)
-                                d3.selectAll("path")//.transition(500)
-                                                    .attr("d", path);
+        // translate = [width/2, height/2];
+        // projection.translate(translate);
+        //                         path = d3.geo.path().projection(projection)
+        //                         d3.selectAll("path")//.transition(500)
+        //                                             .attr("d", path);
         transform = "";
-        g.transition()
-            .duration(750)
-            .style("stroke-width", "1.5px")
+        // g.transition()
+            // .duration(750)
+            g.style("stroke-width", "1.5px")
             .attr("transform", transform);
-        zoom.scale(1);
+
+        zoom.scale(scaleExtent[0]);
         zoom.translate([0, 0]);
 
+        projection.scale(scaleExtent[0]);
+        projection.rotate(rotate);
+        projection.translate(translate)
+        // redraw();
+        path = d3.geo.path().projection(projection)
+                                d3.selectAll("path")//.transition(500)
+                                                    .attr("d", path);
         removeSunburst();
     }
 
@@ -1263,7 +1283,8 @@ $(window).load(function () {
     }
 
     $('#defaultDisplay').click(function() {
-
+        console.log("display the world")
+        // unfocus();
         displayTheWorld();
     });
 
