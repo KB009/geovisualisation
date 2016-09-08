@@ -101,12 +101,17 @@ var GeoMenu = {
     for (var i = 0; i < checkAttacks.length; i++) {
         var ch = document.getElementById('checkbox-' + i);
         ch.onclick = function() {
-        if (this.checked && GeoMenu.getShowAttacks().indexOf(this.name) === -1)
+          var index = GeoMenu.getShowAttacks().indexOf(this.name);
+        if (this.checked && index === -1) 
             GeoMenu.showAttacks.push(this.name);
-        else if (this.checked === false && GeoMenu.getShowAttacks().indexOf(this.name) !== -1)
-            GeoMenu.showAttacks.splice(this.name, 1);
+        else if (this.checked === false && index !== -1)
+            GeoMenu.showAttacks.splice(index, 1);
+
+        var evt = new CustomEvent('geomenuUpdate', { detail: 'showAttacks'});
+        document.getElementById("geo-menu").dispatchEvent(evt);
+    
       };
-    }  
+    }
   }
   
 };
