@@ -84,6 +84,7 @@ $(window).load(function () {
     projection.scale(scaleExtent[0]);
 
     var zoom = d3.behavior.zoom()
+                    // .center([width / 2, mapheight / 2 + menu_height])
                     .scaleExtent(scaleExtent)
                     .scale(projection.scale())
                     .translate([0,0])
@@ -95,12 +96,15 @@ $(window).load(function () {
     var tlast = [0, 0],
         slast = null;
 
-    function redraw() {
+    function redraw(newScale, newTrans) {
         // if (d3.event && !blockTransform) { 
         if (d3.event && !blockTransform) { 
             var scale = d3.event.scale,
                 t = d3.event.translate;                
-            
+        } else {
+            var scale = newScale,
+                t = newTrans;           
+        }
             // if scaling changes, ignore translation (otherwise touch zooms are weird)
             if (scale != slast) {
                 projection.scale(scale);
@@ -131,8 +135,7 @@ $(window).load(function () {
             // transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
             // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
                 // d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
-        }
-
+        
 
     }
 
@@ -401,10 +404,10 @@ $(window).load(function () {
                                 "visibility"  : "hidden"
                             })
                             .on("zoom", null);
-            initFocus();
+
+            // initFocus();
         })
 
-        // initFocus();
 
     });
 
@@ -883,9 +886,7 @@ $(window).load(function () {
             g.style("stroke-width", "1.5px")
             .attr("transform", transform);
 
-        zoom.scale(scaleExtent[0]);
-        zoom.translate([0, 0]);
-
+/*
         projection.scale(scaleExtent[0]);
         projection.rotate(rotate);
         projection.translate(translate)
@@ -893,6 +894,13 @@ $(window).load(function () {
         path = d3.geo.path().projection(projection)
                                 d3.selectAll("path")//.transition(500)
                                                     .attr("d", path);
+*/
+        projection.rotate(rotate);
+        zoom.scale(scaleExtent[0]);
+        zoom.translate([0, 0]);
+        // zoom.rotate(rotate);
+
+        redraw(scaleExtent[0], [0, 0])                                                    
         removeSunburst();
     }
 
