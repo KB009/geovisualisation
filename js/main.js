@@ -196,10 +196,11 @@ $(window).load(function () {
 
     // ------------- FLAGS --------------
     var sunburstFlag = false,
-        focusFlag = false,
+        // focusFlag = false,
         countryAttacksFlag = false;
 
-    var countryDetail;
+    var countryDetail,
+        countrySunburst;
 
     // ------------- SVG --------------
     svg = d3.select("body").append("svg")
@@ -615,7 +616,7 @@ $(window).load(function () {
 
                                         d3.select(this).classed("attacker", true)
                                                        // .classed("displayed", true);
-
+                                        console.log(result[0].country, choropleth_source(result[0].attacked_sb_filter))
                                         return choropleth_source(result[0].attacked_sb_filter);
                                     }
                                 }
@@ -624,8 +625,10 @@ $(window).load(function () {
                                 if (result.length > 0) {
                                     if (result[0].was_attacked_filter != 0) {
 
+
                                         d3.select(this).classed("victim", true)
                                                        // .classed("displayed", true);
+                                        console.log(result[0].country, choropleth_target(result[0].was_attacked_filter))
                                         
                                         return choropleth_target(result[0].was_attacked_filter);
                                     }
@@ -703,15 +706,22 @@ $(window).load(function () {
     
     // ----- update -----
     function updateChoroplethDomains() {
+
+        var domain_min = d3.min(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MAX_VALUE : d.attacked_sb_filter; });
+        if (domain_min == Number.MAX_VALUE) domain_min = 0;
         choropleth_source.domain([
-                            d3.min(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MAX_VALUE : d.attacked_sb_filter; }),
-                            d3.max(data, function(d) { return d.attacked_sb_filter == 0 ? Number.MIN_VALUE : d.attacked_sb_filter; }),
+                            domain_min,
+                            d3.max(data, function(d) { return d.attacked_sb_filter == 0 ? 0 : d.attacked_sb_filter; }) + 1,
             ]);
 
+        domain_min = d3.min(data, function(d) { return d.was_attacked_filter == 0 ? Number.MAX_VALUE : d.was_attacked_filter; });
+        if (domain_min == Number.MAX_VALUE) domain_min = 0;
         choropleth_target.domain([
-                            d3.min(data, function(d) { return d.was_attacked_filter == 0 ? Number.MAX_VALUE : d.was_attacked_filter; }),
-                            d3.max(data, function(d) { return d.was_attacked_filter == 0 ? Number.MIN_VALUE : d.was_attacked_filter; })
+                            domain_min,
+                            d3.max(data, function(d) { return d.was_attacked_filter == 0 ? 0 : d.was_attacked_filter; }) + 1
             ]);
+
+        updateLegend();
     }
 
     function updateLegend() {
@@ -918,12 +928,13 @@ $(window).load(function () {
     /////////////////////////////////////////////////////////////////////////
 
     function createSunburst(d) {
-
+        console.log("createsunburst")
+        console.log(d)
         var clicked_country = ($.grep(data, function(e) { return e.country == d.id; }))[0];
         if (GeoMenu.getDisplayIP() == "source") {
-            if (clicked_country.attacked_sb == 0) return;
+            if (clicked_country.attacked_sb_filter == 0) return;
         } else {
-            if (clicked_country.was_attacked == 0) return;
+            if (clicked_country.was_attacked_filter == 0) return;
         }
 
         blockTransform = true;
@@ -975,10 +986,14 @@ $(window).load(function () {
         sunburst.append("text").attr({ "id": "caption_ip", "class": "caption", "dy": 35 })
                             
         totalSize = sunburst_paths.node().__data__.value;
+
+        sunburstFlag = true;
+        countrySunburst = d.id;
     }
 
     function removeSunburst() {
         d3.selectAll("#sunburst").remove();
+        sunburstFlag = false;
     }
 
     function buildHierarchy(d) {
@@ -1073,6 +1088,7 @@ $(window).load(function () {
         switch(e.detail) {
 
             case 'displayIP':
+                updateLegend();
                 showChoropleth();
                 break;
 
@@ -1085,7 +1101,24 @@ $(window).load(function () {
             case 'showAttacks':
                 updateAttackCounts();
                 updateChoroplethDomains();
-                showChoropleth();
+
+                // console.log(sunburstFlag);
+                if (sunburstFlag) {
+                    console.log("change sunburst")
+
+                    removeSunburst();
+                    sunburstFlag = true;
+                    d = d3.selectAll("#" + countrySunburst)[0];
+                    console.log(d[0]);
+                    createSunburst(d[0])
+
+                // } else {
+                    
+                }
+
+                    console.log("show choropleth")
+                    showChoropleth();
+
                 break;
         }
     });
@@ -1202,7 +1235,6 @@ $(window).load(function () {
         }
     }
 
-
     // first part and second part only differ in accessing targets or sources and adding to attacked_sb or was_attacked
     function mergeData(fromCountry, toCountry) {
         if (fromCountry.attacked_sb > 0) {
@@ -1306,6 +1338,37 @@ $(window).load(function () {
         displayTheWorld();
     });
 
+
+    // On   F I L T E R I N G
+    function updateAttackCounts() {
+
+        console.log(" ---- Update Attack Counts ---- ")
+        console.log(GeoMenu.getShowAttacks());
+
+        data.forEach(function(country) {
+            country.was_attacked_filter = 0;
+            country.attacked_sb_filter = 0;
+
+            country.sources.countries.forEach(function(source) {
+                source.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.was_attacked_filter += attack_type.count;
+                        console.log(country)
+                    }
+                })
+            })
+
+            country.targets.countries.forEach(function(target) {
+                target.attack_types.forEach(function(attack_type) {
+                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
+                        country.attacked_sb_filter += attack_type.count;
+                    }
+                })
+            })
+        })
+
+        // console.log(data);
+    }
 
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
@@ -1479,35 +1542,7 @@ $(window).load(function () {
         return ip;
     }
 
-    // On   F I L T E R I N G
-    function updateAttackCounts() {
 
-        console.log(" ---- Update Attack Counts ---- ")
-        console.log(GeoMenu.getShowAttacks());
-
-        data.forEach(function(country) {
-            country.was_attacked_filter = 0;
-            country.attacked_sb_filter = 0;
-
-            country.sources.countries.forEach(function(source) {
-                source.attack_types.forEach(function(attack_type) {
-                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
-                        country.was_attacked_filter += attack_type.count;
-                    }
-                })
-            })
-
-            country.targets.countries.forEach(function(target) {
-                target.attack_types.forEach(function(attack_type) {
-                    if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
-                        country.attacked_sb_filter += attack_type.count;
-                    }
-                })
-            })
-        })
-
-        // console.log(data);
-    }
 
     // On   Display CURVES between attacker and victims
     function prepareArcData(d) {
