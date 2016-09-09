@@ -185,6 +185,10 @@ $(window).load(function () {
                                         showChoropleth();
                                         unfocus();
                                     }
+                                    if (d3.event.keyCode == 48) {
+                                        console.log("init Focus")
+                                        initFocus();
+                                    }
                                 })
 
     // ------------- FLAGS --------------
@@ -397,8 +401,10 @@ $(window).load(function () {
                                 "visibility"  : "hidden"
                             })
                             .on("zoom", null);
-            // initFocus();
+            initFocus();
         })
+
+        // initFocus();
 
     });
 
@@ -746,11 +752,12 @@ $(window).load(function () {
                                     .filter(function(d) {
                                         var result = $.grep(data, function(e){ return e.country == d.id; });
                                         if (result.length > 0 && GeoMenu.getDisplayIP() == "source") {
-                                            return result[0].attacked_sb != 0;
+                                            return result[0].attacked_sb_filter != 0;
                                         } else if (result.length > 0 && GeoMenu.getDisplayIP() == "target") {
-                                            return result[0].was_attacked != 0;
+                                            return result[0].was_attacked_filter != 0;
                                         } else return false;
                                     }).each(function(d) {
+                                        console.log(d.id)
                                         var bounds = path.bounds(d);
                                         if (bounds[0][0] < xMin) {  // left  
                                             xMin = bounds[0][0];
@@ -769,26 +776,27 @@ $(window).load(function () {
                                             bottom = d.id;
                                         }
                                     })
-
+        console.log(xMin, xMax, yMin, yMax);
         dx = xMax - xMin,       // right - left
         dy = yMax - yMin,       // bottom - top
-        x = (xMax - xMin) / 2;  // (left - rigth) / 2
+        x = (xMax + xMin) / 2;  // (left - rigth) / 2
+        // y = (yMin - yMax) / 2;
         if (yMin < 0) {
             y = yMax/2;
         } else {
             y = (yMin + yMax) / 2;  // (top - bottom) / 2
         }
+        console.log(dx, dy, x, y);
 
-
-        scale = 1 / Math.max(dx / width, dy / (height - menu_height)),
-        translate = [width / 2 - scale * x, height / 2 - scale * y]
-
+        scale = 0.9 / Math.max(dx / width, dy / (height - menu_height)),
+        translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2]
+        // transform = "translate(" + translate + ")scale(" + scale + ")";
         g.transition()
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-        zoom.scale(scale);
-        zoom.translate(translate);
+        // zoom.scale(scale);
+        // zoom.translate(translate);
     }
 
     function focusOnCountry(d) {
@@ -807,6 +815,8 @@ $(window).load(function () {
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
         // console.log(scale, translate);
             
+        console.log(bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]);
+        console.log(dx, dy, x, y);
 
         // zoom.scale(scale);
         // zoom.translate(translate);
