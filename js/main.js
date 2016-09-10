@@ -80,31 +80,42 @@ $(window).load(function () {
         s = mapwidth/(b[1][0]-b[0][0]),
         scaleExtent = [s, 10*s];
 
-    console.log(width, scaleExtent, b[1][0], b[0][0])
+    // console.log(width, scaleExtent, b[1][0], b[0][0])
     projection.scale(scaleExtent[0]);
 
     var zoom = d3.behavior.zoom()
-                    // .center([width / 2, mapheight / 2 + menu_height])
+                    // .center([width / 2, height / 2])
                     .scaleExtent(scaleExtent)
                     .scale(projection.scale())
-                    .translate([0,0])
+                    .translate([0,0])    // ovlivnuje posun pri zoomu? 
                     .on("zoom", redraw);
 
-    path = d3.geo.path()
-    .projection(projection);
+    path = d3.geo.path().projection(projection);
 
     var tlast = [0, 0],
         slast = null;
 
-    function redraw(newScale, newTrans) {
+    function initVis(newScale, newTrans) {
+
+        projection = d3.geo.mercator().scale(scaleExtent[0]).translate([width/2, height/2]).rotate(rotate);
+        path = d3.geo.path().projection(projection);
+
+        g.selectAll('path')       // re-project path data
+            .attr('d', path);
+    
+        slast = scaleExtent[0];
+        tlast = [0, 0];
+
+    }          
+
+    function redraw() {
         // if (d3.event && !blockTransform) { 
+        
+
         if (d3.event && !blockTransform) { 
             var scale = d3.event.scale,
                 t = d3.event.translate;                
-        } else {
-            var scale = newScale,
-                t = newTrans;           
-        }
+        
             // if scaling changes, ignore translation (otherwise touch zooms are weird)
             if (scale != slast) {
                 projection.scale(scale);
@@ -136,7 +147,7 @@ $(window).load(function () {
             // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
                 // d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
         
-
+        }
     }
 
 
@@ -180,7 +191,6 @@ $(window).load(function () {
     //                         .on("zoom", redraw)
 
 */
-
     // on ESC, cancel the view 
     d3.select("body").on("keydown", function() {
                                     if (d3.event.keyCode == 27) { // Esc
@@ -275,7 +285,6 @@ $(window).load(function () {
                             "fill" : function(d) { return choropleth_source.range()[d]; },
                             "stroke-width" : "1px",
                             "stroke" : "white"
-
                         })
 
     var legendMin = legend.append("text")
@@ -616,7 +625,7 @@ $(window).load(function () {
 
                                         d3.select(this).classed("attacker", true)
                                                        // .classed("displayed", true);
-                                        console.log(result[0].country, choropleth_source(result[0].attacked_sb_filter))
+                                        // console.log(result[0].country, choropleth_source(result[0].attacked_sb_filter))
                                         return choropleth_source(result[0].attacked_sb_filter);
                                     }
                                 }
@@ -628,7 +637,7 @@ $(window).load(function () {
 
                                         d3.select(this).classed("victim", true)
                                                        // .classed("displayed", true);
-                                        console.log(result[0].country, choropleth_target(result[0].was_attacked_filter))
+                                        // console.log(result[0].country, choropleth_target(result[0].was_attacked_filter))
                                         
                                         return choropleth_target(result[0].was_attacked_filter);
                                     }
@@ -789,7 +798,7 @@ $(window).load(function () {
                                             bottom = d.id;
                                         }
                                     })
-        console.log(xMin, xMax, yMin, yMax);
+        // console.log(xMin, xMax, yMin, yMax);
         dx = xMax - xMin,       // right - left
         dy = yMax - yMin,       // bottom - top
         x = (xMax + xMin) / 2;  // (left - rigth) / 2
@@ -799,7 +808,7 @@ $(window).load(function () {
         } else {
             y = (yMin + yMax) / 2;  // (top - bottom) / 2
         }
-        console.log(dx, dy, x, y);
+        // console.log(dx, dy, x, y);
 
         scale = 0.9 / Math.max(dx / width, dy / (height - menu_height)),
         translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2]
@@ -828,8 +837,8 @@ $(window).load(function () {
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
         // console.log(scale, translate);
             
-        console.log(bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]);
-        console.log(dx, dy, x, y);
+        // console.log(bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]);
+        // console.log(dx, dy, x, y);
 
         // zoom.scale(scale);
         // zoom.translate(translate);
@@ -905,13 +914,20 @@ $(window).load(function () {
                                 d3.selectAll("path")//.transition(500)
                                                     .attr("d", path);
 */
-        projection.rotate(rotate);
+        removeSunburst();
+
+        // projection.scale(scaleExtent[0]);
+        // projection.rotate(rotate);
+        // projection.translate([width/2,height/2]);
+        // path = d3.geo.path().projection(projection);
+
         zoom.scale(scaleExtent[0]);
         zoom.translate([0, 0]);
         // zoom.rotate(rotate);
 
-        redraw(scaleExtent[0], [0, 0])                                                    
-        removeSunburst();
+
+        initVis(scaleExtent[0], [0, 0])                                                    
+        // redraw(scaleExtent[0], [0, 0])                                                    
     }
 
 
@@ -928,7 +944,7 @@ $(window).load(function () {
     /////////////////////////////////////////////////////////////////////////
 
     function createSunburst(d) {
-        console.log("createsunburst")
+        // console.log("createsunburst")
         console.log(d)
         var clicked_country = ($.grep(data, function(e) { return e.country == d.id; }))[0];
         if (GeoMenu.getDisplayIP() == "source") {
@@ -1104,19 +1120,19 @@ $(window).load(function () {
 
                 // console.log(sunburstFlag);
                 if (sunburstFlag) {
-                    console.log("change sunburst")
+                    // console.log("change sunburst")
 
                     removeSunburst();
                     sunburstFlag = true;
                     d = d3.selectAll("#" + countrySunburst)[0];
-                    console.log(d[0]);
+                    // console.log(d[0]);
                     createSunburst(d[0])
 
                 // } else {
                     
                 }
 
-                    console.log("show choropleth")
+                    // console.log("show choropleth")
                     showChoropleth();
 
                 break;
@@ -1333,7 +1349,7 @@ $(window).load(function () {
     }
 
     $('#defaultDisplay').click(function() {
-        console.log("display the world")
+        // console.log("display the world")
         // unfocus();
         displayTheWorld();
     });
@@ -1342,7 +1358,7 @@ $(window).load(function () {
     // On   F I L T E R I N G
     function updateAttackCounts() {
 
-        console.log(" ---- Update Attack Counts ---- ")
+        // console.log(" ---- Update Attack Counts ---- ")
         console.log(GeoMenu.getShowAttacks());
 
         data.forEach(function(country) {
@@ -1353,7 +1369,7 @@ $(window).load(function () {
                 source.attack_types.forEach(function(attack_type) {
                     if ( contains(GeoMenu.getShowAttacks(), attack_type.type_id) ) {
                         country.was_attacked_filter += attack_type.count;
-                        console.log(country)
+                        // console.log(country)
                     }
                 })
             })
