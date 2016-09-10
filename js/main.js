@@ -97,6 +97,9 @@ $(window).load(function () {
 
     function initVis(newScale, newTrans) {
 
+        zoom.scale(scaleExtent[0]);
+        zoom.translate([0, 0]);
+
         projection = d3.geo.mercator().scale(scaleExtent[0]).translate([width/2, height/2]).rotate(rotate);
         path = d3.geo.path().projection(projection);
 
@@ -142,7 +145,23 @@ $(window).load(function () {
             g.selectAll('path')       // re-project path data
                 .attr('d', path);
 
+            country_names_wrap.attr("font-size", function() { 
+                            var ratio = scale/scaleExtent[0];
+                            var fontsize = 8 + (2/3) * (ratio - 1);
+                            return fontsize + "pt";
+                        })
 
+            g.selectAll('text')
+                .attr({
+                        "x" : function(d) { return path.centroid(d)[0]; },
+                        "y" : function(d) { return path.centroid(d)[1]; },
+                        // "font-size" : function() { 
+                        //     var ratio = scale/scaleExtent[0];
+                        //     var fontsize = 8 + (2/3) * (ratio - 1);
+                        //     return fontsize + "px";
+                        // }
+                    });
+                // .attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             // transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
             // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
                 // d3.selectAll(".curve").style("stroke-width", function() { return Math.min((2.5 / d3.event.scale), 1.5) + "px"} )
@@ -232,6 +251,9 @@ $(window).load(function () {
                         //     "dblclick.zoom" : null });
 
     g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
+    var countries_wrap = g.append("g").attr("id", "countries_wrap");
+    var country_names_wrap = g.append("g").attr("id", "country_names_wrap")
+                                            .attr("font-size", "8pt");
 
     var lan = svg.append("g").attr({ "id" : "lanBubble" });
 
@@ -344,7 +366,7 @@ $(window).load(function () {
 
         getCountryNames(function(names) {
 
-            g.selectAll("path")
+            countries_wrap.selectAll("path")
                         .data(topojson.feature(json, json.objects.countries).features)
                         .enter()
                         .append("path")
@@ -397,7 +419,7 @@ $(window).load(function () {
                         })
 */
 
-            g.selectAll("text")
+            country_names_wrap.selectAll("text")
                             .data(topojson.feature(json, json.objects.countries).features)
                             .enter()
                             .append("text")
@@ -409,11 +431,11 @@ $(window).load(function () {
                                 "x" : function(d) { return path.centroid(d)[0]; },
                                 "y" : function(d) { return path.centroid(d)[1]; },
                                 "text-anchor" : "middle",
-                                "font-size"   : "8pt",
+                                // "font-size"   : "8pt",
                                 "font-family" : "sans-serif",
                                 "visibility"  : "hidden"
                             })
-                            .on("zoom", null);
+                            // .on("zoom", null);
 
             // initFocus();
         })
@@ -859,8 +881,10 @@ $(window).load(function () {
         g.transition()
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
-                    .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
-                    
+                    .attr("transform", "translate(" + translate + ")scale(" + scale + ")")
+        console.log(country_names_wrap)
+        country_names_wrap.attr("font-size", "3pt")    // todo 
+
     }
 
     // Reset to the last user transformation
@@ -894,40 +918,12 @@ $(window).load(function () {
         active.classed("active", false);
         active = d3.select(null);
         
-        // translate = [width/2, height/2];
-        // projection.translate(translate);
-        //                         path = d3.geo.path().projection(projection)
-        //                         d3.selectAll("path")//.transition(500)
-        //                                             .attr("d", path);
         transform = "";
-        // g.transition()
-            // .duration(750)
-            g.style("stroke-width", "1.5px")
+        g.style("stroke-width", "1.5px")
             .attr("transform", transform);
 
-/*
-        projection.scale(scaleExtent[0]);
-        projection.rotate(rotate);
-        projection.translate(translate)
-        // redraw();
-        path = d3.geo.path().projection(projection)
-                                d3.selectAll("path")//.transition(500)
-                                                    .attr("d", path);
-*/
         removeSunburst();
-
-        // projection.scale(scaleExtent[0]);
-        // projection.rotate(rotate);
-        // projection.translate([width/2,height/2]);
-        // path = d3.geo.path().projection(projection);
-
-        zoom.scale(scaleExtent[0]);
-        zoom.translate([0, 0]);
-        // zoom.rotate(rotate);
-
-
-        initVis(scaleExtent[0], [0, 0])                                                    
-        // redraw(scaleExtent[0], [0, 0])                                                    
+        initVis(scaleExtent[0], [0, 0]);                                                  
     }
 
 
@@ -1153,7 +1149,6 @@ $(window).load(function () {
         }
         
         assignUnknownCountryTo(unknownAssignedTo);
-
     });
 
     function assignUnknownCountryTo(toCountry) {
