@@ -36,6 +36,9 @@ $(window).load(function () {
                       .x(function(d) { return (d.x); })
                       .y(function(d) { return (d.y); });
 
+    var centroids = {};
+    // var centroids_inverted = []
+
     // ---------- SUNBURST -------------
     var formatNumber = d3.format(",d");
 
@@ -153,8 +156,14 @@ $(window).load(function () {
 
             g.selectAll('text')
                 .attr({
-                        "x" : function(d) { return path.centroid(d)[0]; },
-                        "y" : function(d) { return path.centroid(d)[1]; },
+                        "x" : function(d) { 
+                            var coords = projection(centroids[d.id]);
+                            return coords[0]; 
+                        },
+                        "y" : function(d) { 
+                            var coords = projection(centroids[d.id]);
+                            return coords[1]; 
+                        },
                         // "font-size" : function() { 
                         //     var ratio = scale/scaleExtent[0];
                         //     var fontsize = 8 + (2/3) * (ratio - 1);
@@ -172,44 +181,7 @@ $(window).load(function () {
 
 
     // ------------- BEHAVIOUR --------------
-/*
-    var drag = d3.behavior.drag()
-                            .origin(function() { return {x: rotate[0], y: -rotate[1]}; })
-                            .on("drag", function() {
 
-                                if (!blockTransform) {
-                                rotate[0] = d3.event.x;
-                                translate[0] = width/2;
-
-                                translate[1] += d3.event.y;
-                                if (translate[1] > height) {
-                                    translate[1] = height;
-                                }
-                                if (translate[1] < 0) {
-                                    translate[1] = 0;
-                                }
-                                
-                                projection.rotate(rotate).translate(translate);
-                                path = d3.geo.path().projection(projection);
-
-
-
-                                d3.selectAll("path")
-                                            // .transition()
-                                            // .delay(1000)
-                                            // .duration(750)
-                                            .attr("d", path);
-
-                                        }
-
-                            });  
-
-    // var zoom = d3.behavior.zoom()
-    //                         .scaleExtent([1, 10])
-    //                         // .on("zoom", zoomed);
-    //                         .on("zoom", redraw)
-
-*/
     // on ESC, cancel the view 
     d3.select("body").on("keydown", function() {
                                     if (d3.event.keyCode == 27) { // Esc
@@ -220,6 +192,10 @@ $(window).load(function () {
                                     if (d3.event.keyCode == 48) {
                                         console.log("init Focus")
                                         initFocus();
+                                    }
+                                    if (d3.event.keyCode == 49) {
+                                        console.log("checkCentroids")
+                                        checkCentroids();
                                     }
                                 })
 
@@ -236,19 +212,27 @@ $(window).load(function () {
                                 .attr("id", "svg")
                             // .attr("width", width)
                             // .attr("height", mapheight)
-                            // .attr("preserveAspectRatio", "xMinYMin meet")
                             // .classed("svg-content-responsive", true)
                             .attr("viewBox", "0 0 " + width + " " + height)
+                            .attr("preserveAspectRatio", "xMinYMin meet")
                             // .call(zoom);
 
     var g = svg.append("g")
                         .attr("id", "map_wrap")
                         .style("stroke-width", "1px")
-                        // .call(drag)
                         .call(zoom)
                         // .on({ "mousedown.zoom" : null, "touchstart.zoom": null,
                         //     "touchmove.zoom" : null, "touchend.zoom"  : null });
                         //     "dblclick.zoom" : null });
+                        .on('mousemove', function(ev) {
+                          var pos = d3.mouse(svg.node()),
+                              px = pos[0],
+                              py = pos[1];
+                          var coords = projection.invert([px, py]);
+                          var lon = coords[0].toFixed(4),
+                              lat = coords[1].toFixed(4);
+                          // console.log(lon, lat)
+                        });
 
     g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
     var countries_wrap = g.append("g").attr("id", "countries_wrap");
@@ -383,9 +367,62 @@ $(window).load(function () {
                                 }
                             }
                         })
+                        .each(function(d) {
+
+                            if (d.id == "AQ") {
+                                centroids["AQ"] = [0, -72.7863];
+                                return;
+                            }
+                            if (d.id == "US") {
+                                centroids["US"] = [-100, 40];
+                                return;
+                            }
+                            if (d.id == "RU") {
+                                centroids["RU"] = [104.9374, 61.5272];
+                                return;
+                            }
+                            if (d.id == "FR") {
+                                centroids["FR"] = [2, 46];
+                                return;
+                            }
+                            if (d.id == "NL") {
+                                centroids["NL"] = [5, 52];
+                                return;
+                            }
+
+                            var bounds = path.bounds(d),
+                                left = bounds[0][0],
+                                top = bounds[0][1],
+                                right = bounds[1][0],
+                                bottom = bounds[1][1];
+
+                                var left_top = projection.invert([left, top]),
+                                    right_bottom = projection.invert([right, bottom]);
+
+                                var lon_left = Number(left_top[0].toFixed(4)),
+                                    lon_right = Number(right_bottom[0].toFixed(4)),
+
+                                    lat_top = Number(left_top[1].toFixed(4)),
+                                    lat_bottom = Number(right_bottom[1].toFixed(4));
+
+                                var x_center = (lon_left + lon_right) / 2;
+                                if (lon_left > 0 && lon_right < 0) {
+                                    if (x_center > 0) x_center += -180;
+                                    else x_center += 180;
+                                }
+                                var y_center = (lat_top + lat_bottom) / 2;
+
+                                x_center.toFixed(4);
+                                y_center.toFixed(4);
+
+                                centroids[d.id] = [x_center, y_center];
+
+                        })
                         .attr("class", "country-boundary")
                         .on("click", clicked)
                         .on("contextmenu", rightclicked)
+
+                        console.log(centroids);
 
 /*      // LAN BUBBLE
             var lanRadius = 70;
@@ -428,8 +465,14 @@ $(window).load(function () {
                                 return names[String(d.id)];
                             })
                             .attr({
-                                "x" : function(d) { return path.centroid(d)[0]; },
-                                "y" : function(d) { return path.centroid(d)[1]; },
+                                "x" : function(d) { 
+                                    var coords = projection(centroids[d.id]);
+                                    return coords[0]; 
+                                 },
+                                "y" : function(d) { 
+                                    var coords = projection(centroids[d.id]);
+                                    return coords[1]; 
+                                },
                                 "text-anchor" : "middle",
                                 // "font-size"   : "8pt",
                                 "font-family" : "sans-serif",
@@ -438,11 +481,66 @@ $(window).load(function () {
                             // .on("zoom", null);
 
             // initFocus();
+        // checkCentroids();
         })
+
 
 
     });
 
+/*
+    function checkCentroids() {
+        for (state in centroids) {
+            if (centroids.hasOwnProperty(state)) {
+                if (state == "AQ") {
+                // if(centroids[state][0] == centroids[state][1]) {
+                    console.log(state, centroids[state][0])
+                    
+
+                    d3.selectAll("#" + state).each(function(d) {
+                         var bounds = path.bounds(d),
+                                left = bounds[0][0],
+                                top = bounds[0][1],
+                                right = bounds[1][0],
+                                bottom = bounds[1][1];
+
+                                console.log(bounds)
+
+                                var left_top = projection.invert([left, top]),
+                                    right_bottom = projection.invert([right, bottom]);
+
+                                var lon_left = Number(left_top[0].toFixed(4)),
+                                    lon_right = Number(right_bottom[0].toFixed(4)),
+
+                                    lat_top = Number(left_top[1].toFixed(4)),
+                                    lat_bottom = Number(right_bottom[1].toFixed(4));
+
+                                // console.log(d.id, Number(lon_left), lon_right, lat_top, lat_bottom);
+                                var x_center = (lon_left + lon_right) / 2;
+                                console.log("1", state, lon_left, lon_right, x_center)
+
+                                if (lon_left > 0 && lon_right < 0) {
+                                    if (x_center > 0) x_center += -180;
+                                    else x_center += 180;
+                                }
+                                console.log("2", state, lon_left, lon_right, x_center)
+
+                                var y_center = (lat_top + lat_bottom) / 2;
+                                x_center.toFixed(4);
+                                y_center.toFixed(4);
+                                console.log(d.id, x_center, y_center);
+
+
+
+                                centroids[d.id] = [x_center, y_center];
+
+                    })
+                }
+
+            }
+        }
+    }
+*/
     
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
@@ -802,6 +900,7 @@ $(window).load(function () {
                                         } else return false;
                                     }).each(function(d) {
                                         console.log(d.id)
+                                        console.log(d)
                                         var bounds = path.bounds(d);
                                         if (bounds[0][0] < xMin) {  // left  
                                             xMin = bounds[0][0];
