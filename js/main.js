@@ -37,6 +37,7 @@ $(window).load(function () {
                       .y(function(d) { return (d.y); });
 
     var centroids = {};
+    var halfwidth = {};
     // var centroids_inverted = []
 
     // ---------- SUNBURST -------------
@@ -371,22 +372,27 @@ $(window).load(function () {
 
                             if (d.id == "AQ") {
                                 centroids["AQ"] = [0, -72.7863];
+                                halfwidth[d.id] = 180;
                                 return;
                             }
                             if (d.id == "US") {
                                 centroids["US"] = [-100, 40];
+                                halfwidth[d.id] = 60.2592;
                                 return;
                             }
                             if (d.id == "RU") {
                                 centroids["RU"] = [104.9374, 61.5272];
+                                halfwidth[d.id] = 85.3334;
                                 return;
                             }
                             if (d.id == "FR") {
                                 centroids["FR"] = [2, 46];
+                                halfwidth[d.id] = 9;
                                 return;
                             }
                             if (d.id == "NL") {
                                 centroids["NL"] = [5, 52];
+                                halfwidth[d.id] = 3;
                                 return;
                             }
 
@@ -414,8 +420,10 @@ $(window).load(function () {
 
                                 x_center.toFixed(4);
                                 y_center.toFixed(4);
+                                lon_left.toFixed(4);
 
                                 centroids[d.id] = [x_center, y_center];
+                                halfwidth[d.id] = x_center - lon_left;
 
                         })
                         .attr("class", "country-boundary")
@@ -488,11 +496,11 @@ $(window).load(function () {
 
     });
 
-/*
+
     function checkCentroids() {
         for (state in centroids) {
             if (centroids.hasOwnProperty(state)) {
-                if (state == "AQ") {
+                if (state == "US" || state == "RU") {
                 // if(centroids[state][0] == centroids[state][1]) {
                     console.log(state, centroids[state][0])
                     
@@ -528,19 +536,19 @@ $(window).load(function () {
                                 var y_center = (lat_top + lat_bottom) / 2;
                                 x_center.toFixed(4);
                                 y_center.toFixed(4);
+                                lon_left.toFixed(4)
                                 console.log(d.id, x_center, y_center);
+                                console.log(x_center - lon_left)
 
-
-
-                                centroids[d.id] = [x_center, y_center];
-
+                                // centroids[d.id] = [x_center, y_center];
+                                // halfwidth[d.id] = x_center - lon_left;
                     })
                 }
 
             }
         }
     }
-*/
+
     
     /////////////////////////////////////////////////////////////////////////
     //                                                                     //
@@ -630,8 +638,8 @@ $(window).load(function () {
         active.classed("active", false);
         active = d3.select(this).classed("active", true);
         
-        createSunburst(d);
         focusOnCountry(d);
+        createSunburst(d);
     }
 /*
     function zoomed() {
@@ -942,15 +950,70 @@ $(window).load(function () {
         // zoom.translate(translate);
     }
 
+    function convertToLonLat(cartesianBounds) {
+        var bounds = cartesianBounds,
+            left = bounds[0][0],
+            top = bounds[0][1],
+            right = bounds[1][0],
+            bottom = bounds[1][1];
+
+        var left_top = projection.invert([left, top]),
+            right_bottom = projection.invert([right, bottom]);
+
+        var lon_left = Number(left_top[0].toFixed(4)),
+            lon_right = Number(right_bottom[0].toFixed(4)),
+
+            lat_top = Number(left_top[1].toFixed(4)),
+            lat_bottom = Number(right_bottom[1].toFixed(4));
+
+        return [[lon_left, lon_right],[lat_top, lat_bottom]];
+    }
+
     function focusOnCountry(d) {
         blockTransform = true;
 
         // active.classed("active", false);
         // active = d3.select(this).classed("active", true);
 
-        // Zoom on a clicked country
-        var bounds = path.bounds(d),                // [[left, top], [right, bottom]]
-            dx = bounds[1][0] - bounds[0][0],       // right - left
+        var g_width = document.getElementById("countries_wrap").getBBox().width;
+        var bounds = path.bounds(d);                // [[left, top], [right, bottom]]
+        console.log(bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1])
+
+        var diff = bounds[1][0] - bounds[0][0];
+            console.log(diff, g_width)
+        if (Math.abs(diff) > g_width/2) {
+            lonLat = convertToLonLat(bounds);
+            console.log(lonLat);
+
+            var edge = lonLat[0][0];    // lon_left
+            var center = centroids[d.id][0]   // x_center;
+
+            var rot = (edge < center) ? halfwidth[d.id] : -halfwidth[d.id];
+            console.log(rot, halfwidth[d.id], -halfwidth[d.id]);
+
+            /*
+            if (edge < center) {
+                rot = 20;
+            } else {
+                projection.rotate([-20, 0]);
+            }*/
+
+            projection.rotate([projection.rotate()[0] + rot, 0]);
+            d3.selectAll("path").attr("d", path);
+            
+            bounds = path.bounds(d);
+            // diff = bounds[1][0] + bounds[0][0] - g_width;
+            // console.log(diff)
+
+            // centroids[d.id]
+
+            // console.log("across", d.id)            
+        }
+
+        // var bounds = path.bounds(d);
+        // console.log(bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1])
+
+        var dx = bounds[1][0] - bounds[0][0],       // right - left
             dy = bounds[1][1] - bounds[0][1],       // bottom - top
             x = (bounds[0][0] + bounds[1][0]) / 2,  // (left - rigth) / 2
             y = (bounds[0][1] + bounds[1][1]) / 2,  // (top - bottom) / 2
@@ -964,7 +1027,7 @@ $(window).load(function () {
         // zoom.scale(scale);
         // zoom.translate(translate);
 
-        var g_width = document.getElementById("map_wrap").getBBox().width;
+        // console.log(g_width)
         // console.log("Country bb: " + dx + " map_wrap bb: " + 0.9 * g_width);
         // console.log("Bound box: " + dx + " right: " + bounds[1][0] + " left: " + bounds[0][0]);
           // console.log("right " + bounds[1][0] + " inverted: " + projection.invert([bounds[1][0], bounds[0][1]]));
