@@ -185,6 +185,9 @@ $(window).load(function () {
                 }
 
             })
+
+            updateCurves();
+
                 // .attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             // transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
             // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
@@ -244,7 +247,7 @@ $(window).load(function () {
                           var coords = projection.invert([px, py]);
                           var lon = coords[0].toFixed(4),
                               lat = coords[1].toFixed(4);
-                          console.log(lon, lat)
+                          // console.log(lon, lat)
                         });
 
     g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
@@ -873,8 +876,15 @@ $(window).load(function () {
         countryAttacksFlag = true;
     }
 
+    function updateCurves() {
+        if (!countryDetail) return;
+
+        d3.selectAll(".curve").remove();
+        showCurves();
+    }
+
     function showCurves(d) {
-        lineData = prepareArcData(d);
+        lineData = prepareArcData(countryDetail);
 
         lineData.forEach(function(e) {
             curves.append("path")
@@ -1805,16 +1815,22 @@ $(window).load(function () {
 
 
     // On   Display CURVES between attacker and victims
-    function prepareArcData(d) {
+    function prepareArcData(id) {
         var lineData = [];
+        console.log(id)
+        var coords = projection(centroids[id])
 
-        var x1 = path.centroid(d)[0];
-        var y1 = path.centroid(d)[1];
+        var x1 = coords[0];
+        var y1 = coords[1];
 
         d3.selectAll(".involved")
-                            .each(function(d) {
-                                var x3 = path.centroid(d)[0];
-                                var y3 = path.centroid(d)[1];
+                            .each(function(e) {
+                                coords = projection(centroids[e.id])
+
+                                var x3 = coords[0];
+                                var y3 = coords[1];
+                                // var x3 = path.centroid(d)[0];
+                                // var y3 = path.centroid(d)[1];
 
                                 var x2 = (x1 + x3) / 2;
                                 var y2 = (y1 + y3) / 2 - 60;
