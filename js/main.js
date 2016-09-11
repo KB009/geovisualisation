@@ -189,6 +189,12 @@ $(window).load(function () {
                                         removeSunburst();
                                         showChoropleth();
                                         unfocus();
+
+
+                    //     g.transition()
+                    // .duration(750)
+                    // .style("stroke-width", 1.5 / scale + "px")
+                    // .attr("transform", "translate(" + translate + ")scale(" + scale + ")")
                                     }
                                     if (d3.event.keyCode == 48) {
                                         console.log("init Focus")
@@ -468,6 +474,7 @@ $(window).load(function () {
                             .data(topojson.feature(json, json.objects.countries).features)
                             .enter()
                             .append("text")
+                            // .attr("id", function(d) { return d.id + "-text"})
                             .attr("class", "countryNames")
                             .text(function(d) {
                                 return names[String(d.id)];
@@ -995,27 +1002,23 @@ $(window).load(function () {
             var rot = (edge < center) ? halfwidth[d.id] : -halfwidth[d.id];
             console.log(rot, halfwidth[d.id], -halfwidth[d.id]);
 
-            /*
-            if (edge < center) {
-                rot = 20;
-            } else {
-                projection.rotate([-20, 0]);
-            }*/
-
             projection.rotate([projection.rotate()[0] + rot, 0]);
             d3.selectAll("path").attr("d", path);
             
             bounds = path.bounds(d);
-            // diff = bounds[1][0] + bounds[0][0] - g_width;
-            // console.log(diff)
 
-            // centroids[d.id]
-
-            // console.log("across", d.id)            
+             g.selectAll('text')
+                .attr({
+                        "x" : function(d) { 
+                            var coords = projection(centroids[d.id]);
+                            return coords[0]; 
+                        },
+                        "y" : function(d) { 
+                            var coords = projection(centroids[d.id]);
+                            return coords[1]; 
+                        }
+                    });
         }
-
-        // var bounds = path.bounds(d);
-        // console.log(bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1])
 
         var dx = bounds[1][0] - bounds[0][0],       // right - left
             dy = bounds[1][1] - bounds[0][1],       // bottom - top
@@ -1023,33 +1026,29 @@ $(window).load(function () {
             y = (bounds[0][1] + bounds[1][1]) / 2,  // (top - bottom) / 2
             scale = .9 / Math.max(dx / width, dy / (height - menu_height)),
             translate = [width / 2 - scale * x, height / 2 - scale * y - menu_height / 2];
-        // console.log(scale, translate);
-            
-        // console.log(bounds[0][0], bounds[1][0], bounds[0][1], bounds[1][1]);
-        // console.log(dx, dy, x, y);
-
-        // zoom.scale(scale);
-        // zoom.translate(translate);
-
-        // console.log(g_width)
-        // console.log("Country bb: " + dx + " map_wrap bb: " + 0.9 * g_width);
-        // console.log("Bound box: " + dx + " right: " + bounds[1][0] + " left: " + bounds[0][0]);
-          // console.log("right " + bounds[1][0] + " inverted: " + projection.invert([bounds[1][0], bounds[0][1]]));
-          // console.log("left " + bounds[0][0] + " inverted: " + projection.invert([bounds[0][0], bounds[0][1]] ));
-
-        // projection.scale(scale);
-        // projection.translate(translate);
-
-
-        // path = d3.geo.path().projection(projection);
-        // d3.selectAll("path").attr("d", path);
 
         g.transition()
                     .duration(750)
                     .style("stroke-width", 1.5 / scale + "px")
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")")
-        console.log(country_names_wrap)
-        country_names_wrap.attr("font-size", "3pt")    // todo 
+
+        var scaleRatio = projection.scale()/scaleExtent[0];
+        console.log(scaleRatio, scale, scaleRatio * scale);
+        
+        // if (GeoMenu.getDisplayCountryNames() == "visible") { 
+        g.selectAll("text")/*.filter(function(a) {
+                                return a.id != d.id;
+                            })*/
+                            .classed("hidden", true)
+                            .attr("visibility", "hidden")
+        
+
+/*
+        scaleRatio *= scale;
+        country_names_wrap.attr("font-size", function() {
+            fontsize = 120 / scale;
+            return fontsize;
+        })    // todo */
 
     }
 
@@ -1060,13 +1059,27 @@ $(window).load(function () {
         active.classed("active", false);
         active = d3.select(null);
 
-        // zoom.scale(1);
-        // zoom.translate([0, 0]);
-
         g.transition()
             .duration(750)
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
+
+        g.selectAll(".hidden").transition()
+                              .delay(750)
+                              .attr("visibility", function() {
+                                return GeoMenu.getDisplayCountryNames() ? "visible" : "hidden"
+                              })
+
+        country_names_wrap.transition()
+                          .duration(100)
+                          .delay(750)
+                          .attr("font-size", function() {
+                                var scaleRatio = projection.scale()/scaleExtent[0];
+                                return 8 + 2/3 * scaleRatio;
+                          })  
+
+        g.selectAll(".hidden").classed("hidden", false);
+
     };
 
     function displayTheWorld() {
@@ -1277,7 +1290,10 @@ $(window).load(function () {
                 break;
 
             case 'showNames':
-                g.selectAll("text").attr("visibility", function(d) {
+                g.selectAll("text").filter(function(a) {
+                    return !d3.select(this).classed("hidden")
+                })
+                                    .attr("visibility", function(d) {
                         return GeoMenu.getDisplayCountryNames() ? "visible" : "hidden";
                     })
                 break;
