@@ -1112,7 +1112,25 @@ $(window).load(function () {
             .attr("transform", transform);
 
         removeSunburst();
-        initVis(scaleExtent[0], [0, 0]);                                                  
+        initVis(scaleExtent[0], [0, 0]);          
+
+        g.selectAll('text').attr({
+                            "x" : function(d) { 
+                                var coords = projection(centroids[d.id]);
+                                return coords[0]; 
+                            },
+                            "y" : function(d) { 
+                                var coords = projection(centroids[d.id]);
+                                return coords[1]; 
+                            }
+                        })
+                        .each(function(a) {
+                            if (path.area(a) < 400) {
+                                d3.select(this).classed("hidden", true)
+                            } else {
+                                d3.select(this).classed("hidden", false)
+                            };      
+                        })                                    
     }
 
 
