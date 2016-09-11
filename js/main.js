@@ -122,7 +122,7 @@ $(window).load(function () {
         
 
         if (d3.event && !blockTransform) { 
-            console.log("zoom")
+            // console.log("zoom")
             var scale = d3.event.scale,
                 t = d3.event.translate;                
         
@@ -1166,6 +1166,11 @@ $(window).load(function () {
                             "y" : function(d) { 
                                 var coords = projection(centroids[d.id]);
                                 return coords[1]; 
+                            },
+                            "font-size" : function() {
+                                var ratio = projection.scale()/scaleExtent[0];
+                                var fontsize = 8 + (2/3) * (ratio - 1);
+                                return fontsize + "pt";
                             }
                         })
                         .each(function(a) {
@@ -1817,7 +1822,7 @@ $(window).load(function () {
     // On   Display CURVES between attacker and victims
     function prepareArcData(id) {
         var lineData = [];
-        console.log(id)
+        // console.log(id)
         var coords = projection(centroids[id])
 
         var x1 = coords[0];
