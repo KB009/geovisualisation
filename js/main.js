@@ -927,7 +927,11 @@ $(window).load(function () {
                                             bottom = d.id;
                                         }
                                     })
-        // console.log(xMin, xMax, yMin, yMax);
+
+        // no countries selected
+        if (xMin > xMax ) return;
+
+        console.log(xMin, xMax, yMin, yMax);
         dx = xMax - xMin,       // right - left
         dy = yMax - yMin,       // bottom - top
         x = (xMax + xMin) / 2;  // (left - rigth) / 2
