@@ -120,6 +120,7 @@ $(window).load(function () {
         
 
         if (d3.event && !blockTransform) { 
+            console.log("zoom")
             var scale = d3.event.scale,
                 t = d3.event.translate;                
         
@@ -174,7 +175,7 @@ $(window).load(function () {
 
 
             d3.selectAll("text").each(function(a) {
-                console.log(a, path.area(a));
+                // console.log(a, path.area(a));
                 if (path.area(a) < 400) {
                     d3.select(this).classed("hidden", true)
                 } else {
@@ -1082,8 +1083,9 @@ $(window).load(function () {
                           .duration(100)
                           .delay(750)
                           .attr("font-size", function() {
-                                var scaleRatio = projection.scale()/scaleExtent[0];
-                                return 8 + 2/3 * scaleRatio;
+                            var ratio = projection.scale()/scaleExtent[0];
+                            var fontsize = 8 + (2/3) * (ratio - 1);
+                            return fontsize + "pt";
                           })  
 
         g.selectAll(".invis").classed("invis", false);
