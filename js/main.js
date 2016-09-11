@@ -405,6 +405,16 @@ $(window).load(function () {
                                 halfwidth[d.id] = 3;
                                 return;
                             }
+                            if (d.id == "ES") {
+                                centroids["ES"] = [-4, 38];
+                                halfwidth[d.id] = 6;
+                                return;
+                            }
+                            if (d.id == "PT") {
+                                centroids["PT"] = [-8, 40.4885];
+                                halfwidth[d.id] = 20;
+                                return;
+                            }
 
                             var bounds = path.bounds(d),
                                 left = bounds[0][0],
@@ -497,7 +507,6 @@ $(window).load(function () {
                                 "font-family" : "sans-serif",
                                 "visibility"  : "hidden"
                             }).each(function(a) {
-                                console.log(a, path.area(a));
                                 if (path.area(a) < 400) {
                                     d3.select(this).classed("hidden", true)
                                 } else {
