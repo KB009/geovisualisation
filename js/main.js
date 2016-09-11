@@ -171,6 +171,17 @@ $(window).load(function () {
                         //     return fontsize + "px";
                         // }
                     });
+
+
+            d3.selectAll("text").each(function(a) {
+                console.log(a, path.area(a));
+                if (path.area(a) < 400) {
+                    d3.select(this).classed("hidden", true)
+                } else {
+                    d3.select(this).classed("hidden", false)
+                }
+
+            })
                 // .attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             // transform = "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")";
             // curves.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
@@ -189,20 +200,12 @@ $(window).load(function () {
                                         removeSunburst();
                                         showChoropleth();
                                         unfocus();
-
-
-                    //     g.transition()
-                    // .duration(750)
-                    // .style("stroke-width", 1.5 / scale + "px")
-                    // .attr("transform", "translate(" + translate + ")scale(" + scale + ")")
                                     }
                                     if (d3.event.keyCode == 48) {
                                         console.log("init Focus")
                                         initFocus();
                                     }
                                     if (d3.event.keyCode == 49) {
-                                        console.log("checkCentroids")
-                                        checkCentroids();
                                     }
                                 })
 
@@ -492,6 +495,14 @@ $(window).load(function () {
                                 // "font-size"   : "8pt",
                                 "font-family" : "sans-serif",
                                 "visibility"  : "hidden"
+                            }).each(function(a) {
+                                console.log(a, path.area(a));
+                                if (path.area(a) < 400) {
+                                    d3.select(this).classed("hidden", true)
+                                } else {
+                                    d3.select(this).classed("hidden", false)
+                                }
+
                             })
                             // .on("zoom", null);
 
@@ -1036,10 +1047,7 @@ $(window).load(function () {
         console.log(scaleRatio, scale, scaleRatio * scale);
         
         // if (GeoMenu.getDisplayCountryNames() == "visible") { 
-        g.selectAll("text")/*.filter(function(a) {
-                                return a.id != d.id;
-                            })*/
-                            .classed("hidden", true)
+        g.selectAll("text").classed("invis", true)
                             .attr("visibility", "hidden")
         
 
@@ -1064,10 +1072,10 @@ $(window).load(function () {
             .style("stroke-width", "1.5px")
             .attr("transform", transform);
 
-        g.selectAll(".hidden").transition()
+        g.selectAll(".invis").transition()
                               .delay(750)
                               .attr("visibility", function() {
-                                return GeoMenu.getDisplayCountryNames() ? "visible" : "hidden"
+                                return GeoMenu.getDisplayCountryNames() ? "" : "hidden";
                               })
 
         country_names_wrap.transition()
@@ -1078,7 +1086,7 @@ $(window).load(function () {
                                 return 8 + 2/3 * scaleRatio;
                           })  
 
-        g.selectAll(".hidden").classed("hidden", false);
+        g.selectAll(".invis").classed("invis", false);
 
     };
 
@@ -1291,10 +1299,9 @@ $(window).load(function () {
 
             case 'showNames':
                 g.selectAll("text").filter(function(a) {
-                    return !d3.select(this).classed("hidden")
-                })
-                                    .attr("visibility", function(d) {
-                        return GeoMenu.getDisplayCountryNames() ? "visible" : "hidden";
+                    return !d3.select(this).classed("invis")
+                }).attr("visibility", function(d) {
+                        return GeoMenu.getDisplayCountryNames() ? "" : "hidden";
                     })
                 break;
 

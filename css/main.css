@@ -54,6 +54,10 @@ path.victim path.attacker {
   fill: gray !important;
 }
 
+text.hidden {
+  visibility: hidden !important;
+}
+
 /**
  * SUNBURST Diagram
  */
