@@ -22,6 +22,8 @@ $(window).load(function () {
 
     var svg;
 
+    var areaLimit = 500;
+
     // ---------- MAP -------------
     var projection = d3.geo.mercator()
                             .rotate(rotate)
@@ -176,7 +178,7 @@ $(window).load(function () {
 
             d3.selectAll("text").each(function(a) {
                 // console.log(a, path.area(a));
-                if (path.area(a) < 400) {
+                if (path.area(a) < areaLimit) {
                     d3.select(this).classed("hidden", true)
                 } else {
                     d3.select(this).classed("hidden", false)
@@ -242,7 +244,7 @@ $(window).load(function () {
                           var coords = projection.invert([px, py]);
                           var lon = coords[0].toFixed(4),
                               lat = coords[1].toFixed(4);
-                          // console.log(lon, lat)
+                          console.log(lon, lat)
                         });
 
     g.append("rect").attr({ "width"  : "100%", "height" : "100%", "opacity": 0 });
@@ -415,6 +417,11 @@ $(window).load(function () {
                                 halfwidth[d.id] = 20;
                                 return;
                             }
+                            if (d.id == "CL") {
+                                centroids["CL"] = [-71.2335, -35];
+                                halfwidth[d.id] = 20;
+                                return;
+                            }
 
                             var bounds = path.bounds(d),
                                 left = bounds[0][0],
@@ -444,6 +451,24 @@ $(window).load(function () {
 
                                 centroids[d.id] = [x_center, y_center];
                                 halfwidth[d.id] = x_center - lon_left;
+
+                            if (d.id == "CF") {
+                                    centroids[d.id][1] = 5.59;
+                                    return;
+                            }
+                            if (d.id == "GH") {
+                                    centroids[d.id][1] = 6;
+                                    return;
+                            }
+                            if (d.id == "MZ") {
+                                centroids[d.id][1] = -15;
+                                return;
+                            }
+                            if (d.id == "BW") {
+                                centroids[d.id][1] = -21;
+                                return;
+                            }
+
 
                         })
                         .attr("class", "country-boundary")
@@ -507,7 +532,7 @@ $(window).load(function () {
                                 "font-family" : "sans-serif",
                                 "visibility"  : "hidden"
                             }).each(function(a) {
-                                if (path.area(a) < 400) {
+                                if (path.area(a) < areaLimit) {
                                     d3.select(this).classed("hidden", true)
                                 } else {
                                     d3.select(this).classed("hidden", false)
@@ -1134,7 +1159,7 @@ $(window).load(function () {
                             }
                         })
                         .each(function(a) {
-                            if (path.area(a) < 400) {
+                            if (path.area(a) < areaLimit) {
                                 d3.select(this).classed("hidden", true)
                             } else {
                                 d3.select(this).classed("hidden", false)
