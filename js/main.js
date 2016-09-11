@@ -1264,6 +1264,12 @@ $(window).load(function () {
             case 'displayIP':
                 updateLegend();
                 showChoropleth();
+                if (sunburstFlag) {
+                    removeSunburst();
+                    sunburstFlag = true;
+                    d = d3.selectAll("#" + countrySunburst)[0];
+                    createSunburst(d[0])
+                }
                 break;
 
             case 'showNames':
