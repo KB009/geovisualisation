@@ -846,7 +846,7 @@ $(window).load(function () {
 
         // Draw CHOROPLETH of attackers/victims of countryDetail
         _participants.forEach(function(e) {  
-            selected = d3.select("#" + e)
+            selected = g.select("#" + e)
                 .filter(function(e) { return e.id != countryDetail; })
                 .classed("involved", true)
                 .style("fill", function(e) {
