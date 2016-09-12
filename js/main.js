@@ -176,7 +176,7 @@ $(window).load(function () {
                     });
 
 
-            d3.selectAll("text").each(function(a) {
+            g.selectAll("text").each(function(a) {
                 // console.log(a, path.area(a));
                 if (path.area(a) < areaLimit) {
                     d3.select(this).classed("hidden", true)
