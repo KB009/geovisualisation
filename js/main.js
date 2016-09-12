@@ -337,9 +337,9 @@ $(window).load(function () {
     // -------------------------------------------------------------------------
 
     function initGeoMenu() {
-        GeoMenu.setDisplayIP("source");
-        GeoMenu.setDisplayCountryNames(false);
-        GeoMenu.setShowAttacks(["INSTMSG", "COUNTRY"]);
+        // GeoMenu.setDisplayIP("source");
+        // GeoMenu.setDisplayCountryNames(false);
+        GeoMenu.setShowAttacks(attackTypes);
     }
 
     // Vsechny udalosti
@@ -478,39 +478,9 @@ $(window).load(function () {
                         .on("click", clicked)
                         .on("contextmenu", rightclicked)
 
-                        console.log(centroids);
+                        // console.log(centroids);
 
-/*      // LAN BUBBLE
-            var lanRadius = 70;
-            lan.append("circle")
-                        // .attr("id", "LAN")
-                        // .attr("d", d3.select("#LAN"))
-                        .attr({
-                            "r": lanRadius,
-                            "cx": function() { return lanRadius + 100; },
-                            "cy": function() { return height - menu_height - (lanRadius + 100); },
-                            // "class" : "country-boundary"
-                        })
-                        .style({
-                            "fill": "#ccc",
-                            "stroke-width": "1px",
-                            "stroke": "white"
-                        })
-            lan.append("text")
-                        .text("LAN") // "unknown"
-                        .attr({
-                            "x": function() { return lanRadius + 100; },
-                            "y": function() { return height - menu_height - (lanRadius + 88); }, //+95
-                            "text-anchor": "middle",
-                            "font-size": "25pt" // "18pt"
-                        })
-                        .style({
-                            "fill":"white"
-                        })
-                        .on("mouserover", function() {
-                            // d3.event.preventDefault();
-                        })
-*/
+
 
             country_names_wrap.selectAll("text")
                             .data(topojson.feature(json, json.objects.countries).features)
@@ -544,6 +514,40 @@ $(window).load(function () {
                             })
                             // .on("zoom", null);
 
+
+/*      // LAN BUBBLE
+            var lanRadius = 70;
+            lan.append("circle")
+                        // .attr("id", "LAN")
+                        // .attr("d", d3.select("#LAN"))
+                        .attr({
+                            "r": lanRadius,
+                            "cx": function() { return lanRadius + 100; },
+                            "cy": function() { return height - menu_height - (lanRadius + 100); },
+                            // "class" : "country-boundary"
+                        })
+                        .style({
+                            "fill": "#ccc",
+                            "stroke-width": "1px",
+                            "stroke": "white"
+                        })
+            lan.append("text")
+                        .text("LAN") // "unknown"
+                        .attr({
+                            "x": function() { return lanRadius + 100; },
+                            "y": function() { return height - menu_height - (lanRadius + 88); }, //+95
+                            "text-anchor": "middle",
+                            "font-size": "25pt" // "18pt"
+                        })
+                        .style({
+                            "fill":"white"
+                        })
+                        .on("mouserover", function() {
+                            // d3.event.preventDefault();
+                        })
+*/
+
+        $('#radio-display-source').click();
             // initFocus();
         // checkCentroids();
         })
@@ -1618,7 +1622,7 @@ $(window).load(function () {
     function updateAttackCounts() {
 
         // console.log(" ---- Update Attack Counts ---- ")
-        console.log(GeoMenu.getShowAttacks());
+        // console.log(GeoMenu.getShowAttacks());
 
         data.forEach(function(country) {
             country.was_attacked_filter = 0;
