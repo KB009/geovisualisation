@@ -63,3 +63,19 @@ h3 {
   overflow-y: scroll;
   border: 1px solid gray;  
 }
+
+.country-selector .ui-dialog-titlebar {
+    display: none;
+}
+
+.country-selector .ui-dialog-buttonset {
+    width: 90%;
+}
+
+.country-selector button {
+    width: 45%;
+}
+
+.country-selector .ui-dialog-buttonpane {
+    padding: 0;
+}

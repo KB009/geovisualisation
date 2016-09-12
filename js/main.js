@@ -16,7 +16,7 @@ $(window).load(function () {
 
     var data = [];
     var attackTypes = [];
-    var countryNames;
+    this.countryNames = [];
 
     var unknownAssignedTo = "";
 
@@ -354,7 +354,7 @@ $(window).load(function () {
     });
 
     function getCountryNames(callback) {
-        countryNames = d3.json("data/countries.json", function(error, json) {
+        /*window.countryNames =*/ d3.json("data/countries.json", function(error, json) {
             if (error) return console.error(error);
             callback(json);
             return json;
@@ -365,7 +365,7 @@ $(window).load(function () {
         if (error) return console.error(error);
 
         getCountryNames(function(names) {
-
+            window.countryNames = names;
             countries_wrap.selectAll("path")
                         .data(topojson.feature(json, json.objects.countries).features)
                         .enter()
@@ -1409,23 +1409,24 @@ $(window).load(function () {
                     showChoropleth();
 
                 break;
-        }
-    });
-    
-    $('#assignUnknown').click(function() {
+                
+            case 'assignCountry': 
+                var selected = GeoMenu.getAssignedCountry();
+                console.log(selected);
+                if (unknownAssignedTo) {
+                    var unknown = $.grep(data, function(e) { return e.country == "XXX"});
+                    if (unknown.length == 0 || unknown.length > 1) { return false; }
 
-        if (unknownAssignedTo) {
-            var unknown = $.grep(data, function(e) { return e.country == "XXX"});
-            if (unknown.length == 0 || unknown.length > 1) { return false; }
+                    subtractUnknownData(unknownAssignedTo);
+                    unknownAssignedTo = selected;
+                } else {
+                    unknownAssignedTo = selected;   
+                }
 
-            subtractUnknownData(unknownAssignedTo);
-            unknownAssignedTo = "ES";   // TO DO / Get chosen Country
-        } else {
-            unknownAssignedTo = "IE";   // TO DO / Get chosen Country
-            
+                assignUnknownCountryTo(unknownAssignedTo);
+                
+                break;
         }
-        
-        assignUnknownCountryTo(unknownAssignedTo);
     });
 
     function assignUnknownCountryTo(toCountry) {

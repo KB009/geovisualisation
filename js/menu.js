@@ -13,6 +13,7 @@ var GeoMenu = {
   displayCountryNames : false,
   allAttacks : [],
   showAttacks : ["INSTMSG", "COUNTRY"],
+  assignCountry : null,
 
   //div-radio-display -- display IP addresses
   setDisplayIP: function(newValue) {
@@ -112,8 +113,10 @@ var GeoMenu = {
     
       };
     }
+  },
+  getAssignedCountry: function() {
+    return GeoMenu.assignCountry;
   }
-  
 };
 
 GeoMenu.render = function() {
@@ -199,7 +202,7 @@ $(document).ready(function() {
 
   // dynamically create HTML
   $('#geo-menu').append(GeoMenu.render());
-
+  $('body').append('<div id="country-dialog"><div class="content"><table></table></div></div>')
   $('#assignUnknown').button();
   $('#defaultDisplay').button();
 
@@ -225,6 +228,50 @@ $(document).ready(function() {
   showNames.onclick = function() {
     // console.log(showNames.checked);
     GeoMenu.setDisplayCountryNames(showNames.checked);
-    
   }
+  
+  // ********* C H E C K / Assign unknown **********
+  $('#assignUnknown').click(function() {
+
+    var options = {
+        autoOpen: false,
+        height: 250,
+        width: 200,
+        resizable: false,
+        modal: true,
+        dialogClass: 'country-selector',
+        position: { at: "left bottom", my: "left top", of: "#assignUnknown"},
+        buttons: [{
+            text: "zrušit",
+            class: 'cancel',
+            click: function() {
+              $( this ).dialog( "close" );
+            }
+            },{
+            text: "použít",
+            class: 'assign-country',
+            click: function() {
+              var selected = $("input[type='radio'][name='assign-country']:checked").attr('id');
+              
+              if (selected !== undefined) {
+                    GeoMenu.assignCountry = selected;
+                    var evt = new CustomEvent('geomenuUpdate', { detail: 'assignCountry'});
+                    document.getElementById("geo-menu").dispatchEvent(evt);
+              }
+              $( this ).dialog( "close" );
+            }
+        }]
+    };   
+
+    $( "#country-dialog" ).dialog(options).dialog( "open" );
+        
+    var countries;    
+    $.each(window.countryNames, function(code,name) {
+        countries += '<tr><td><input type="radio" id="' + code + '" name="assign-country"></td>';
+        countries += '<td><label for="' + code + '">' + name + '</label></td></tr>';
+    })
+    
+    $('#country-dialog .content table').append(countries);    
+  
+  });
 })
