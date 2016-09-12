@@ -1048,19 +1048,28 @@ $(window).load(function () {
 
         var g_width = document.getElementById("countries_wrap").getBBox().width;
         var bounds = path.bounds(d);                // [[left, top], [right, bottom]]
-        console.log(bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1])
+        // console.log(bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1])
 
         var diff = bounds[1][0] - bounds[0][0];
-            console.log(diff, g_width)
+            // console.log(diff, g_width)
         if (Math.abs(diff) > g_width/2) {
             lonLat = convertToLonLat(bounds);
-            console.log(lonLat);
+            // console.log(lonLat);
 
             var edge = lonLat[0][0];    // lon_left
             var center = centroids[d.id][0]   // x_center;
+            var h_width = halfwidth[d.id];
 
             var rot = (edge < center) ? halfwidth[d.id] : -halfwidth[d.id];
-            console.log(rot, halfwidth[d.id], -halfwidth[d.id]);
+            // console.log(rot, halfwidth[d.id], -halfwidth[d.id]);
+
+            if ( (center - h_width) > 0 && (center - h_width) < 180 &&
+             (center + h_width) > 180 ) {
+                if (Math.sign(edge) != Math.sign(center)) {
+                    // console.log("diff sign");
+                    rot *= -1;
+                }
+            }
 
             projection.rotate([projection.rotate()[0] + rot, 0]);
             d3.selectAll("path").attr("d", path);
@@ -1093,7 +1102,7 @@ $(window).load(function () {
                     .attr("transform", "translate(" + translate + ")scale(" + scale + ")")
 
         var scaleRatio = projection.scale()/scaleExtent[0];
-        console.log(scaleRatio, scale, scaleRatio * scale);
+        // console.log(scaleRatio, scale, scaleRatio * scale);
         
         // if (GeoMenu.getDisplayCountryNames() == "visible") { 
         g.selectAll("text").classed("invis", true)
@@ -1201,7 +1210,7 @@ $(window).load(function () {
 
     function createSunburst(d) {
         // console.log("createsunburst")
-        console.log(d)
+        // console.log(d)
         var clicked_country = ($.grep(data, function(e) { return e.country == d.id; }))[0];
         if (GeoMenu.getDisplayIP() == "source") {
             if (clicked_country.attacked_sb_filter == 0) return;
